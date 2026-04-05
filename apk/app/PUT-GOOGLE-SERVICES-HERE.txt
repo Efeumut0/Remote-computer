@@ -1,0 +1,3 @@
+Place your own Firebase project's google-services.json file in this folder.
+Expected path:
+UzaktanBildirimKurulum-English\apk\app\google-services.json

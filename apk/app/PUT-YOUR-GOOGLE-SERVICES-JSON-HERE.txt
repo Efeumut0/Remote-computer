@@ -1,0 +1,6 @@
+Place the google-services.json file downloaded from your own Firebase project in this folder.
+
+Path:
+apk\app\google-services.json
+
+The APK build will not complete without this file.

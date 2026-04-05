@@ -1,0 +1,22 @@
+{
+  "name": "remote-control-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "db:migrate:local": "wrangler d1 migrations apply DEVICE_DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DEVICE_DB --remote",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "description": "Cloudflare Worker backend for the remote PC controller",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260329.1",
+    "typescript": "^6.0.2",
+    "wrangler": "^4.78.0"
+  }
+}
