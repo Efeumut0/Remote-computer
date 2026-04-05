@@ -12,8 +12,10 @@ android {
         applicationId = "com.uzaktanbildirim.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 63
-        versionName = "6.3"
+        versionCode = 64
+        versionName = "6.4"
+
+        buildConfigField("boolean", "FORCE_ENGLISH", "true")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,6 +40,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         viewBinding = true
     }
 }

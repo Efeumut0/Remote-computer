@@ -310,6 +310,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val livePreviewRunnable = Runnable { pollLivePreview() }
+    private val localizationSweepRunnable = object : Runnable {
+        override fun run() {
+            if (!BuildConfig.FORCE_ENGLISH || !isActivityResumed) {
+                return
+            }
+
+            localizeVisibleUi()
+            mainHandler.postDelayed(this, 350L)
+        }
+    }
     private val clipboardPollRunnable = object : Runnable {
         override fun run() {
             if (!isActivityResumed) {
@@ -424,6 +434,10 @@ class MainActivity : AppCompatActivity() {
         if (store.workerUrl.isNotBlank() && store.ownerToken.isNotBlank()) {
             refreshPcState()
         }
+
+        if (BuildConfig.FORCE_ENGLISH) {
+            binding.root.post { localizeVisibleUi() }
+        }
     }
 
     override fun onResume() {
@@ -441,17 +455,24 @@ class MainActivity : AppCompatActivity() {
         if (store.getLivePreviewEnabled(selectedPcIdOrNull()) && !isLivePreviewRunning) {
             startLivePreview(persistPreference = false)
         }
+        if (BuildConfig.FORCE_ENGLISH) {
+            mainHandler.removeCallbacks(localizationSweepRunnable)
+            mainHandler.post(localizationSweepRunnable)
+            localizeVisibleUi()
+        }
     }
 
     override fun onPause() {
         isActivityResumed = false
         pauseClipboardForegroundMonitoring()
+        mainHandler.removeCallbacks(localizationSweepRunnable)
         super.onPause()
     }
 
     override fun onDestroy() {
         stopLivePreview(updateStoredPreference = false)
         stopClipboardSync()
+        mainHandler.removeCallbacks(localizationSweepRunnable)
         executor.shutdownNow()
         inputExecutor.shutdownNow()
         super.onDestroy()
@@ -912,7 +933,8 @@ class MainActivity : AppCompatActivity() {
                 )
                 .setPositiveButton("Ayarı ac") { _, _ -> requestBackgroundPermission() }
                 .setNegativeButton("Sonra", null)
-                .show()
+                .create()
+                .also { showLocalizedDialog(it) }
         }
     }
 
@@ -1438,7 +1460,8 @@ class MainActivity : AppCompatActivity() {
                 store.hasSeenFirstRunPrompt = true
                 openGettingStartedGuide()
             }
-            .show()
+            .create()
+            .also { showLocalizedDialog(it) }
     }
 
     private fun openGettingStartedGuide() {
@@ -1466,7 +1489,8 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Ilk kurulum rehberi")
             .setView(scrollView)
             .setPositiveButton("Kapat", null)
-            .show()
+            .create()
+            .also { showLocalizedDialog(it) }
     }
 
     private fun registerTokenIfPossible() {
@@ -1623,7 +1647,8 @@ class MainActivity : AppCompatActivity() {
                 refreshUsageSummary()
             }
             .setNegativeButton("Kapat", null)
-            .show()
+            .create()
+            .also { showLocalizedDialog(it) }
     }
 
     private fun loadNotificationSettings() {
@@ -1814,7 +1839,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton("Iptal", null)
-            .show()
+            .create()
+            .also { showLocalizedDialog(it) }
     }
 
     private fun loadProcessList(scope: String) {
@@ -2531,7 +2557,7 @@ class MainActivity : AppCompatActivity() {
             confirmShortcutDeletion(item)
         })
 
-        dialog.show()
+        showLocalizedDialog(dialog)
     }
 
     private fun createShortcutActionRow(): LinearLayout {
@@ -2851,7 +2877,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        dialog.show()
+        showLocalizedDialog(dialog)
     }
 
     private fun saveShortcutItem(shortcut: ShortcutItem, dialog: AlertDialog? = null, triggerView: View? = null) {
@@ -2952,7 +2978,8 @@ class MainActivity : AppCompatActivity() {
                 showToast("${item.title} kaldirildi.")
             }
             .setNegativeButton("Iptal", null)
-            .show()
+            .create()
+            .also { showLocalizedDialog(it) }
     }
 
     private fun refreshShortcutIcon(item: ShortcutItem) {
@@ -3290,7 +3317,7 @@ class MainActivity : AppCompatActivity() {
             dialog.dismiss()
         }
 
-        dialog.show()
+        showLocalizedDialog(dialog)
         loadPath(currentPath)
     }
 
@@ -3718,7 +3745,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton("Iptal", null)
-            .show()
+            .create()
+            .also { showLocalizedDialog(it) }
     }
 
     private fun deleteMultiSelectedRemoteEntries() {
@@ -3766,7 +3794,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton("Iptal", null)
-            .show()
+            .create()
+            .also { showLocalizedDialog(it) }
     }
 
     private fun uploadSelectedPhoneFile(uri: Uri) {
@@ -4432,7 +4461,8 @@ class MainActivity : AppCompatActivity() {
             .setNeutralButton("Kaydet") { _, _ ->
                 saveCurrentScreenshot()
             }
-            .show()
+            .create()
+            .also { showLocalizedDialog(it) }
     }
 
     private fun saveCurrentScreenshot() {
@@ -4888,7 +4918,7 @@ class MainActivity : AppCompatActivity() {
     private fun friendlyErrorMessage(message: String?, fallback: String = "Beklenmeyen hata"): String {
         val trimmed = message?.trim().orEmpty()
         if (trimmed.isBlank()) {
-            return fallback
+            return t(fallback)
         }
 
         val normalized = trimmed.replace(Regex("\\s+"), " ").trim()
@@ -4898,40 +4928,59 @@ class MainActivity : AppCompatActivity() {
             lower.contains("\"error_code\":1101")
                 || lower.contains("error code: 1101")
                 || lower.contains("worker threw exception") ->
-                "Worker hatasi (1101): backend kurulumunda eksik adim olabilir. d1-tablolari-onar-yardimcisi.bat calistirip Worker'i yeniden deploy et."
+                t("Worker hatasi (1101): backend kurulumunda eksik adim olabilir. d1-tablolari-onar-yardimcisi.bat calistirip Worker'i yeniden deploy et.")
 
             lower.contains("no such host is known")
                 || lower.contains("name or service not known")
                 || lower.contains("bilinen böyle bir ana bilgisayar yok")
                 || lower.contains("bilinen boyle bir ana bilgisayar yok") ->
-                "Worker URL hatali veya erisilemiyor. Deploy ciktisindaki tam https://...workers.dev adresini kullan."
+                t("Worker URL hatali veya erisilemiyor. Deploy ciktisindaki tam https://...workers.dev adresini kullan.")
 
             lower.contains("\"status\":401")
                 || lower.contains("\"status\":403")
                 || lower.contains("401 unauthorized")
                 || lower.contains("403 forbidden") ->
-                "Yetki hatasi: oturum bilgisi gecersiz olabilir. PC ile yeniden esles."
+                t("Yetki hatasi: oturum bilgisi gecersiz olabilir. PC ile yeniden esles.")
 
             lower.contains("\"status\":404")
                 || lower.contains("404 not found") ->
-                "Kaynak bulunamadi: Worker URL, secili PC veya ilgili veri eksik olabilir."
+                t("Kaynak bulunamadi: Worker URL, secili PC veya ilgili veri eksik olabilir.")
 
             lower.contains("timeout")
                 || lower.contains("timed out")
                 || lower.contains("zaman asimina ugradi") ->
-                "Istek zaman asimina ugradi. Baglantiyi ve Worker durumunu kontrol edip tekrar dene."
+                t("Istek zaman asimina ugradi. Baglantiyi ve Worker durumunu kontrol edip tekrar dene.")
 
-            normalized.startsWith("{") || normalized.startsWith("[") -> fallback
-            else -> normalized
+            normalized.startsWith("{") || normalized.startsWith("[") -> t(fallback)
+            else -> t(normalized)
         }
     }
 
     private fun appendLog(message: String) {
-        binding.logText.append("• $message\n")
+        binding.logText.append("• ${t(message)}\n")
+        if (BuildConfig.FORCE_ENGLISH) {
+            localizeVisibleUi()
+        }
     }
 
     private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, t(message), Toast.LENGTH_SHORT).show()
+    }
+
+    private fun t(text: String): String = UiTextLocalizer.translate(text)
+
+    private fun localizeVisibleUi(vararg extraRoots: View?) {
+        if (!BuildConfig.FORCE_ENGLISH) {
+            return
+        }
+
+        UiTextLocalizer.applyToViewTree(binding.root)
+        extraRoots.forEach { UiTextLocalizer.applyToViewTree(it) }
+    }
+
+    private fun showLocalizedDialog(dialog: AlertDialog) {
+        dialog.show()
+        localizeVisibleUi(dialog.window?.decorView)
     }
 
     private fun requestNotificationPermissionIfNeeded() {
