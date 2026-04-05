@@ -28,7 +28,7 @@ Do not separate these files. `PcRemoteAgent.exe` should not be moved alone.
 
 ## 3. Prepare your Cloudflare account
 
-1. Open [dashboard.cloudflare.com](https://dashboard.cloudflare.com).
+1. Open [dash.cloudflare.com](https://dash.cloudflare.com).
 2. Sign in or create an account.
 3. For the first setup, `workers.dev` is enough.
 4. Your deployed Worker will appear under `Workers & Pages`.
