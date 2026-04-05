@@ -1,5 +1,0 @@
-<resources>
-    <dimen name="header_logo_size">64dp</dimen>
-    <dimen name="header_logo_gap">16dp</dimen>
-    <dimen name="header_logo_corner">22dp</dimen>
-</resources>
