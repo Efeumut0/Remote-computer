@@ -27,7 +27,7 @@
                 android:layout_width="@dimen/header_logo_size"
                 android:layout_height="@dimen/header_logo_size"
                 android:background="@drawable/bg_header_logo_frame"
-                android:contentDescription="Uzaktan Bildirim logosu"
+                android:contentDescription="Remote Notification logo"
                 android:padding="2dp"
                 android:scaleType="centerCrop"
                 android:src="@drawable/ic_app_brand_logo_v2"
@@ -45,7 +45,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Uzaktan Kontrol"
+                    android:text="Remote Control"
                     android:textColor="@color/text_primary"
                     android:textSize="28sp"
                     android:textStyle="bold" />
@@ -54,7 +54,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Bildirim, dosya ve sistem kontrolu."
+                    android:text="Notifications, files, and system control."
                     android:textColor="@color/text_secondary" />
             </LinearLayout>
         </LinearLayout>
@@ -99,7 +99,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Kisayol paneli"
+                    android:text="Shortcut panel"
                     android:textStyle="bold" />
 
                 <Button
@@ -113,7 +113,7 @@
                     android:paddingTop="8dp"
                     android:paddingRight="14dp"
                     android:paddingBottom="8dp"
-                    android:text="Sirala"
+                    android:text="Reorder"
                     android:textAllCaps="false"
                     android:textColor="@color/text_primary" />
             </LinearLayout>
@@ -123,7 +123,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="EXE, kisayol, klasor, URL, CMD, PowerShell ve Calistir komutlari ekleyebilirsin. Uzun basarak duzenle veya sil."
+                android:text="You can add EXE, shortcut, folder, URL, CMD, PowerShell, and Run commands. Long press to edit or delete."
                 android:textColor="@color/text_secondary" />
 
             <TextView
@@ -133,7 +133,7 @@
                 android:layout_marginTop="10dp"
                 android:background="@drawable/bg_section_outline"
                 android:padding="12dp"
-                android:text="Kartlara dokununca secili PC uzerinde calisir. Linkler varsayilan tarayicida, protokol linkleri destekleyen uygulamada acilir."
+                android:text="Tap a tile to run it on the selected PC. Links open in the default browser or in the app that handles that protocol."
                 android:textColor="@color/text_secondary" />
 
             <GridLayout
@@ -150,7 +150,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Henuz kısayol eklenmedi. Son karttaki arti ile yeni bir tane ekleyebilirsin."
+                android:text="No shortcuts yet. Use the plus tile to add one."
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
 
@@ -191,7 +191,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Ilk kurulum rehberini ac" />
+            android:text="Open the initial setup guide" />
 
         <EditText
             android:id="@+id/workerUrlInput"
@@ -206,14 +206,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Telefon adi" />
+            android:hint="Phone name" />
 
         <Button
             android:id="@+id/saveConfigButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:text="Ayarlarimi kaydet" />
+            android:text="Save my settings" />
 
         <TextView
             android:id="@+id/workerCapabilityStatusText"
@@ -222,7 +222,7 @@
             android:layout_marginTop="10dp"
             android:background="@drawable/bg_section_outline"
             android:padding="12dp"
-            android:text="Worker dosya modu: Kontrol ediliyor."
+            android:text="Worker file mode: Checking."
             android:textColor="@color/text_secondary"
             android:textStyle="bold" />
 
@@ -231,7 +231,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Arka plan calisma izni"
+            android:text="Background activity permission"
             android:textStyle="bold" />
 
         <TextView
@@ -239,7 +239,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Arka plan izni durumu kontrol ediliyor."
+            android:text="Checking background permission status."
             android:textColor="@color/text_secondary" />
 
         <LinearLayout
@@ -254,7 +254,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Izni iste" />
+                android:text="Request permission" />
 
             <Button
                 android:id="@+id/checkBackgroundPermissionButton"
@@ -262,7 +262,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Durumu kontrol et" />
+                android:text="Check status" />
         </LinearLayout>
 
         <TextView
@@ -270,7 +270,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Temiz kurulumda Worker URL ve secili PC APK'nin icine gomulmez. Baglanti bilgilerini sonradan sen girersin."
+            android:text="In a clean setup, the Worker URL and selected PC are not embedded into the APK. You enter the connection details later."
             android:textColor="@color/text_secondary" />
 
         <EditText
@@ -278,21 +278,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:hint="Eslestirme kodu" />
+            android:hint="Pairing code" />
 
         <Button
             android:id="@+id/pairButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:text="PC ile eslestir" />
+            android:text="Pair with PC" />
 
         <Button
             android:id="@+id/refreshStatusButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="PC durumunu yenile" />
+            android:text="Refresh PC status" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -306,7 +306,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Secili PC: -" />
+                android:text="Selected PC: -" />
 
             <TextView
                 android:id="@+id/selectedPcStatusBadge"
@@ -319,7 +319,7 @@
                 android:paddingTop="4dp"
                 android:paddingRight="10dp"
                 android:paddingBottom="4dp"
-                android:text="Bilinmiyor"
+                android:text="Unknown"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
@@ -329,7 +329,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="Eslemeyi kaldir" />
+                android:text="Remove pairing" />
         </LinearLayout>
 
         <TextView
@@ -339,7 +339,7 @@
             android:layout_marginTop="8dp"
             android:background="@drawable/bg_section_outline"
             android:padding="12dp"
-            android:text="Secili Worker: R2 destegi kontrol ediliyor."
+            android:text="Selected Worker: checking R2 support."
             android:textColor="@color/text_secondary"
             android:textStyle="bold" />
 
@@ -348,21 +348,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Coklu PC secimi" />
+            android:text="Multi-PC selection" />
 
         <TextView
             android:id="@+id/statusText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Durum burada gorunecek." />
+            android:text="Status will appear here." />
 
         <TextView
             android:id="@+id/pcListSummaryText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Hesaptaki PC'ler burada ozetlenecek."
+            android:text="PCs in the account will be summarized here."
             android:textColor="@color/text_secondary" />
 
         <TextView
@@ -370,7 +370,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Bildirim ayarlari"
+            android:text="Notification settings"
             android:textStyle="bold" />
 
         <TextView
@@ -378,7 +378,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Bildirim tercihleri burada gorunecek." />
+            android:text="Notification preferences will appear here." />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -391,7 +391,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Ayarlari yukle" />
+                android:text="Load settings" />
 
             <Button
                 android:id="@+id/saveNotificationSettingsButton"
@@ -399,7 +399,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Ayarlari kaydet" />
+                android:text="Save settings" />
         </LinearLayout>
 
         <androidx.appcompat.widget.SwitchCompat
@@ -407,50 +407,50 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="PC acilinca bildir" />
+            android:text="Notify when the PC starts" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/shutdownNotificationSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="PC kapaninca bildir" />
+            android:text="Notify when the PC shuts down" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/agentStopNotificationSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ajan kapaninca bildir" />
+            android:text="Notify when the agent closes" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/sleepNotificationSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Uyku modunu bildir" />
+            android:text="Notify on sleep" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/wakeNotificationSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Uyandiginda bildir" />
+            android:text="Notify on wake" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/offlineNotificationSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Baglanti kesildiginde bildir" />
+            android:text="Notify on disconnect" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/commandFailedNotificationSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Basarisiz komutlari bildir" />
+            android:text="Notify on failed commands" />
 
         <TextView
             android:id="@+id/notificationDisplayLimitHeading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
-            android:text="Bildirim listesi limiti"
+            android:text="Notification list limit"
             android:textStyle="bold" />
 
         <EditText
@@ -458,7 +458,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Ornek: 10"
+            android:hint="Example: 10"
             android:inputType="number"
             android:maxLines="1" />
 
@@ -467,7 +467,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Bildirim merkezinde ayni anda kac bildirim gosterilecegini belirler. 5 ile 50 arasi bir deger kullan."
+            android:text="Sets how many notifications are shown in the notification center at once. Use a value between 5 and 50."
             android:textColor="@color/text_secondary" />
 
         <TextView
@@ -475,7 +475,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Guvenlik ve oturum"
+            android:text="Security and session"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -489,7 +489,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Kilitle" />
+                android:text="Lock" />
 
             <Button
                 android:id="@+id/shutdownButton"
@@ -497,7 +497,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Zorla kapat" />
+                android:text="Force shutdown" />
         </LinearLayout>
 
         <LinearLayout
@@ -511,7 +511,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Zorla yeniden baslat" />
+                android:text="Force restart" />
 
             <Button
                 android:id="@+id/logoffButton"
@@ -519,7 +519,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Oturumu kapat" />
+                android:text="Log off" />
         </LinearLayout>
 
         <TextView
@@ -527,7 +527,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Medya ve ses"
+            android:text="Media and sound"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -557,7 +557,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Sonraki" />
+                android:text="Next" />
         </LinearLayout>
 
         <LinearLayout
@@ -571,7 +571,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Onceki" />
+                android:text="Previous" />
 
             <Button
                 android:id="@+id/volumeUpButton"
@@ -579,7 +579,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Ses +" />
+                android:text="Volume +" />
 
             <Button
                 android:id="@+id/volumeDownButton"
@@ -587,7 +587,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Ses -" />
+                android:text="Volume -" />
         </LinearLayout>
 
         <Button
@@ -595,14 +595,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Mute / Sessize al" />
+            android:text="Mute / Unmute" />
 
         <TextView
             android:id="@+id/appLaunchHeading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Uygulama baslat"
+            android:text="Launch app"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -654,35 +654,35 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Chrome + Spotify + Discord ac" />
+            android:text="Open Chrome + Spotify + Discord" />
 
         <EditText
             android:id="@+id/customAppPathInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Custom uygulama yolu veya alias" />
+            android:hint="Custom app path or alias" />
 
         <EditText
             android:id="@+id/customAppArgumentsInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Custom uygulama argumanlari (opsiyonel)" />
+            android:hint="Custom app arguments (optional)" />
 
         <Button
             android:id="@+id/launchCustomAppButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Secili custom uygulamayi calistir" />
+            android:text="Run selected custom app" />
 
         <TextView
             android:id="@+id/processHeading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Calisan islemler"
+            android:text="Running processes"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -696,7 +696,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Acik uygulamalar" />
+                android:text="Open apps" />
 
             <Button
                 android:id="@+id/loadAllProcessesButton"
@@ -704,7 +704,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Tum islemler" />
+                android:text="All processes" />
         </LinearLayout>
 
         <EditText
@@ -712,14 +712,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Secilen process adi buraya gelir" />
+            android:hint="The selected process name appears here" />
 
         <Button
             android:id="@+id/killSelectedProcessButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Secili process'i kapat" />
+            android:text="Close selected process" />
 
         <LinearLayout
             android:id="@+id/processListContainer"
@@ -733,7 +733,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Sistem bilgisi"
+            android:text="System information"
             android:textStyle="bold" />
 
         <Button
@@ -741,14 +741,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Sistem bilgilerini yenile" />
+            android:text="Refresh system information" />
 
         <TextView
             android:id="@+id/systemInfoText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Sistem bilgileri burada gorunecek."
+            android:text="System information will appear here."
             android:textColor="@color/text_secondary" />
 
         <TextView
@@ -756,7 +756,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Clipboard ve klavye"
+            android:text="Clipboard and keyboard"
             android:textStyle="bold" />
 
         <EditText
@@ -764,7 +764,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Clipboard metni" />
+            android:hint="Clipboard text" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -777,7 +777,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Clipboard gonder" />
+                android:text="Send clipboard" />
 
             <Button
                 android:id="@+id/clipboardGetButton"
@@ -785,7 +785,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Clipboard oku" />
+                android:text="Read clipboard" />
 
             <Button
                 android:id="@+id/clipboardClearButton"
@@ -793,7 +793,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Temizle" />
+                android:text="Clear" />
         </LinearLayout>
 
         <androidx.appcompat.widget.SwitchCompat
@@ -801,14 +801,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Clipboard senkronizasyonunu ac" />
+            android:text="Enable clipboard sync" />
 
         <TextView
             android:id="@+id/clipboardSyncStatusText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Clipboard senkronizasyonu kapali."
+            android:text="Clipboard sync is off."
             android:textColor="@color/text_secondary" />
 
         <EditText
@@ -816,14 +816,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Klavye ile gonderilecek metin" />
+            android:hint="Text to send via keyboard" />
 
         <Button
             android:id="@+id/sendKeyboardButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Metni yaz" />
+            android:text="Type text" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -914,7 +914,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Touchpad alanı istekleri throttle'lar; normal kişisel kullanımda limiti çok sert zorlamaz." />
+            android:text="The touchpad area throttles requests; in normal personal use it does not hit the limit aggressively." />
 
         <View
             android:id="@+id/touchpadView"
@@ -936,7 +936,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Drag modu kapali" />
+            android:text="Drag mode off" />
 
             <Button
                 android:id="@+id/middleClickButton"
@@ -944,7 +944,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Orta tik" />
+                android:text="Middle click" />
         </LinearLayout>
 
         <LinearLayout
@@ -958,7 +958,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Yukari" />
+                android:text="Up" />
 
             <Button
                 android:id="@+id/mouseDownButton"
@@ -966,7 +966,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Asagi" />
+                android:text="Down" />
         </LinearLayout>
 
         <LinearLayout
@@ -980,7 +980,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Sola" />
+                android:text="Left" />
 
             <Button
                 android:id="@+id/mouseRightButton"
@@ -988,7 +988,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Saga" />
+                android:text="Right" />
         </LinearLayout>
 
         <LinearLayout
@@ -1002,7 +1002,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Sol tik" />
+                android:text="Left click" />
 
             <Button
                 android:id="@+id/rightClickButton"
@@ -1010,7 +1010,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Sag tik" />
+                android:text="Right click" />
         </LinearLayout>
 
         <LinearLayout
@@ -1040,7 +1040,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Dosya gezgini"
+            android:text="File explorer"
             android:textStyle="bold" />
 
         <EditText
@@ -1048,7 +1048,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Uzak klasor yolu (bos birak = diskler)" />
+            android:hint="Remote folder path (leave blank = drives)" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -1061,7 +1061,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Diskleri listele" />
+                android:text="List drives" />
 
             <Button
                 android:id="@+id/listFilesButton"
@@ -1069,7 +1069,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Klasoru listele" />
+                android:text="List folder" />
         </LinearLayout>
 
         <LinearLayout
@@ -1083,7 +1083,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Ust klasor" />
+                android:text="Parent folder" />
 
             <Button
                 android:id="@+id/pickUploadFileButton"
@@ -1091,7 +1091,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Telefondan dosya yukle" />
+            android:text="Upload file from phone" />
         </LinearLayout>
 
         <TextView
@@ -1099,14 +1099,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:text="Secili dosya: -" />
+            android:text="Selected file: -" />
 
         <TextView
             android:id="@+id/fileSelectionSummaryText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Coklu secim kapali."
+            android:text="Multi-select is off."
             android:textColor="@color/text_secondary" />
 
         <EditText
@@ -1114,21 +1114,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Yeni klasor adi" />
+            android:hint="New folder name" />
 
         <Button
             android:id="@+id/createFolderButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Mevcut klasorde yeni klasor olustur" />
+            android:text="Create a new folder in the current folder" />
 
         <EditText
             android:id="@+id/renameTargetInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Secili oge icin yeni ad" />
+            android:hint="New name for selected item" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -1141,7 +1141,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Secili dosyayi calistir" />
+            android:text="Run selected file" />
 
             <Button
                 android:id="@+id/downloadSelectedFileButton"
@@ -1149,7 +1149,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Secili dosyayi indir" />
+            android:text="Download selected file" />
         </LinearLayout>
 
         <LinearLayout
@@ -1163,7 +1163,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Secili dosyayi onizle" />
+            android:text="Preview selected file" />
 
             <Button
                 android:id="@+id/clearFileSelectionButton"
@@ -1171,7 +1171,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Secimi temizle" />
+            android:text="Clear selection" />
         </LinearLayout>
 
         <LinearLayout
@@ -1185,7 +1185,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Secili ogeyi yeniden adlandir" />
+            android:text="Rename selected item" />
 
             <Button
                 android:id="@+id/deleteSelectedFileButton"
@@ -1193,7 +1193,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Secili ogeyi sil" />
+            android:text="Delete selected item" />
         </LinearLayout>
 
         <Button
@@ -1201,7 +1201,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Secilen ogeleri toplu sil" />
+            android:text="Delete selected items" />
 
         <ProgressBar
             android:id="@+id/transferProgressBar"
@@ -1217,7 +1217,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Aktarim bekleniyor."
+            android:text="Waiting for transfer."
             android:textColor="@color/text_secondary" />
 
         <TextView
@@ -1225,7 +1225,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:text="Bir klasore dokununca acilir. Uzun basarak oge sec, dosyaya dokunarak calistirma/indirme akisini kullan." />
+            android:text="Tap a folder to open it. Long press to select an item, and tap a file to use the run/download flow." />
 
         <LinearLayout
             android:id="@+id/remoteFilesContainer"
@@ -1239,7 +1239,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Ekran goruntusu"
+            android:text="Screen capture"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -1255,7 +1255,7 @@
                 android:id="@+id/filePreviewTitleText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Dosya onizleme"
+            android:text="File preview"
                 android:textStyle="bold" />
 
             <ImageView
@@ -1264,7 +1264,7 @@
                 android:layout_height="180dp"
                 android:layout_marginTop="10dp"
                 android:adjustViewBounds="true"
-                android:contentDescription="Dosya onizleme resmi"
+            android:contentDescription="File preview image"
                 android:scaleType="fitCenter"
                 android:visibility="gone" />
 
@@ -1273,7 +1273,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="Secili dosyanin hizli onizlemesi burada gosterilir."
+            android:text="A quick preview of the selected file appears here."
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
 
@@ -1288,7 +1288,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Screenshot iste" />
+            android:text="Request screenshot" />
 
             <Button
                 android:id="@+id/openScreenshotButton"
@@ -1296,7 +1296,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Buyut / ac" />
+            android:text="Zoom / open" />
         </LinearLayout>
 
         <LinearLayout
@@ -1310,7 +1310,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Screenshot indir" />
+            android:text="Download screenshot" />
 
             <Button
                 android:id="@+id/pickImageUploadButton"
@@ -1318,7 +1318,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Resim / screenshot secip yukle" />
+            android:text="Choose and upload image / screenshot" />
         </LinearLayout>
 
         <LinearLayout
@@ -1332,7 +1332,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Orijinal canli onizleme" />
+            android:text="Original live preview" />
 
             <Button
                 android:id="@+id/stopLivePreviewButton"
@@ -1340,7 +1340,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Canli onizlemeyi durdur" />
+            android:text="Stop live preview" />
         </LinearLayout>
 
         <Button
@@ -1348,14 +1348,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="1080p canli onizleme baslat" />
+            android:text="Start 1080p live preview" />
 
         <TextView
             android:id="@+id/livePreviewStatusText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Canli ekran onizlemesi kapali."
+            android:text="Live screen preview is off."
             android:textColor="@color/text_secondary" />
 
         <ImageView
@@ -1364,7 +1364,7 @@
             android:layout_height="220dp"
             android:layout_marginTop="10dp"
             android:adjustViewBounds="true"
-            android:contentDescription="Screenshot onizleme"
+            android:contentDescription="Screenshot preview"
             android:scaleType="fitCenter" />
 
         <TextView
@@ -1372,7 +1372,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Son sonuc"
+            android:text="Latest result"
             android:textStyle="bold" />
 
         <TextView
@@ -1380,7 +1380,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Son komut sonucu burada gorunecek." />
+            android:text="The latest command result will appear here." />
 
         <TextView
             android:id="@+id/logHeading"
@@ -1403,7 +1403,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:paddingTop="4dp"
-            android:text="Yaklasik limit bilgisi burada gorunecek."
+            android:text="Estimated limit information will appear here."
             android:textAppearance="?attr/textAppearanceBodySmall" />
 
         <TextView
@@ -1411,7 +1411,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Son 5 bildirim"
+            android:text="Last 5 notifications"
             android:textStyle="bold" />
 
         <TextView
@@ -1419,7 +1419,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Son 5 bildirim burada gorunecek."
+            android:text="The last 5 notifications will appear here."
             android:textColor="@color/text_secondary" />
 
         <LinearLayout
@@ -1433,7 +1433,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Merkezi yenile" />
+            android:text="Refresh center" />
 
             <Button
                 android:id="@+id/markAllNotificationsReadButton"
@@ -1441,7 +1441,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Tumunu okundu yap" />
+            android:text="Mark all as read" />
         </LinearLayout>
 
         <LinearLayout

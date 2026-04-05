@@ -188,7 +188,7 @@ class WorkerApi {
             Thread.sleep(pollIntervalMs)
         }
 
-        throw IllegalStateException("Komut sonucu zamaninda donmedi: $type")
+        throw IllegalStateException("The command result did not return in time: $type")
     }
 
     fun reserveFile(workerUrl: String, ownerToken: String, pcId: String, direction: String, fileName: String): FileReservation {
@@ -387,11 +387,11 @@ class WorkerApi {
 
             return when {
                 errorCode == 1101 ->
-                    "Worker hatasi (1101): backend kurulumunda eksik adim olabilir. d1-tablolari-onar-yardimcisi.bat calistirip Worker'i yeniden deploy et."
+                    "Worker error (1101): a backend setup step may be missing. Run repair-d1-tables-helper.bat and redeploy the Worker."
                 responseCode == 401 || responseCode == 403 ->
-                    "Yetki hatasi: oturum bilgisi gecersiz veya sure dolmus olabilir. PC ile yeniden esles."
+                    "Authorization error: the session may be invalid or expired. Pair with the PC again."
                 responseCode == 404 ->
-                    "Kaynak bulunamadi: Worker URL, secili PC veya ilgili veri eksik olabilir."
+                    "Resource not found: the Worker URL, the selected PC, or related data may be missing."
                 title.isNotBlank() ->
                     "$title (HTTP $responseCode)"
                 else ->
@@ -400,9 +400,9 @@ class WorkerApi {
         }
 
         return when (responseCode) {
-            401, 403 -> "Yetki hatasi: oturum bilgisi gecersiz veya sure dolmus olabilir. PC ile yeniden esles."
-            404 -> "Kaynak bulunamadi: Worker URL, secili PC veya ilgili veri eksik olabilir."
-            in 500..599 -> "Worker tarafinda sunucu hatasi var. Backend kurulumunu ve deploy adimlarini kontrol et."
+            401, 403 -> "Authorization error: the session may be invalid or expired. Pair with the PC again."
+            404 -> "Resource not found: the Worker URL, the selected PC, or related data may be missing."
+            in 500..599 -> "There is a server-side Worker error. Check the backend setup and deploy steps."
             else -> trimmed
         }
     }

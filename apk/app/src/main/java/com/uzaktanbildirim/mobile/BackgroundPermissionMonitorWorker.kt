@@ -54,8 +54,8 @@ class BackgroundPermissionMonitorWorker(
 
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_app_brand_logo_v2_mono)
-            .setContentTitle("Arka plan izni kontrol edilmeli")
-            .setContentText("Batarya optimizasyonu aciksa bildirimler, canli baglanti ve PC'den gelen pano zayiflayabilir.")
+            .setContentTitle("Check background permission")
+            .setContentText("If battery optimization is enabled, notifications, the live connection, and clipboard updates from the PC may become less reliable.")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)

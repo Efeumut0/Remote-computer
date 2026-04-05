@@ -168,9 +168,9 @@ class MainActivity : AppCompatActivity() {
     private val shortcutTypeOptions = listOf(
         ShortcutTypeOption(
             id = "application",
-            label = "Uygulama / kisayol",
+            label = "App / shortcut",
             targetHint = "Ornek: chrome veya C:\\Program Files\\App\\app.exe",
-            helperText = "EXE, LNK, BAT, CMD, COM veya chrome / opera / spotify / discord gibi kisayollar icin kullan.",
+            helperText = "Use this for EXE, LNK, BAT, CMD, COM, or shortcuts such as chrome / opera / spotify / discord.",
             supportsArguments = true,
             pickerMode = ShortcutPickerMode.APPLICATION,
         ),
@@ -193,7 +193,7 @@ class MainActivity : AppCompatActivity() {
         ShortcutTypeOption(
             id = "cmd",
             label = "CMD komutu",
-            targetHint = "Ornek: ipconfig /all",
+            targetHint = "Example: ipconfig /all",
             helperText = "Komut Istemi penceresi acar ve yazdigin komutu /K ile calistirir.",
             supportsArguments = false,
             pickerMode = null,
@@ -210,7 +210,7 @@ class MainActivity : AppCompatActivity() {
             id = "run",
             label = "Calistir komutu",
             targetHint = "Ornek: shell:startup, control veya ms-settings:display",
-            helperText = "Windows Calistir kutusuna yazilabilecek shell ve sistem komutlari icin kullan.",
+            helperText = "Use this for shell and system commands that can be entered into the Windows Run dialog.",
             supportsArguments = true,
             pickerMode = null,
         ),
@@ -218,7 +218,7 @@ class MainActivity : AppCompatActivity() {
             id = "hotkey",
             label = "Tus kombinasyonu",
             targetHint = "",
-            helperText = "Secili PC'de tek vurusluk klavye kombinasyonu calistirir. Ctrl+Alt+Delete gibi guvenli dikkat kombinasyonlari desteklenmez.",
+            helperText = "Runs a single-stroke keyboard combination on the selected PC. Secure attention sequences such as Ctrl+Alt+Delete are not supported.",
             supportsArguments = false,
             pickerMode = null,
         ),
@@ -360,7 +360,7 @@ class MainActivity : AppCompatActivity() {
             val objectKey = pendingDownloadObjectKey
             pendingDownloadBytes = null
             pendingDownloadObjectKey = null
-            appendLog("Dosya kaydetme iptal edildi.")
+            appendLog("File save was cancelled.")
             if (!objectKey.isNullOrBlank()) {
                 runInBackground {
                     runCatching {
@@ -397,9 +397,9 @@ class MainActivity : AppCompatActivity() {
         binding.notificationDisplayLimitInput.setText(store.notificationDisplayLimit.toString())
         updateSelectedPcDisplay(store.pairedPcName.takeIf { it.isNotBlank() }, null)
         binding.unpairButton.isEnabled = store.pairedPcId.isNotBlank()
-        binding.notificationSettingsText.text = "Bildirim tercihlerini buradan yonetebilirsin."
-        binding.clipboardSyncStatusText.text = "Clipboard senkronizasyonu icin once bir PC sec."
-        binding.livePreviewStatusText.text = "Canli ekran onizlemesi icin once bir PC sec."
+        binding.notificationSettingsText.text = "Manage your notification preferences here."
+        binding.clipboardSyncStatusText.text = "Select a PC first to use clipboard sync."
+        binding.livePreviewStatusText.text = "Select a PC first for live screen preview."
 
         updateSelectedRemoteFile(null)
         updateSelectedProcess(null)
@@ -518,7 +518,7 @@ class MainActivity : AppCompatActivity() {
         val root = binding.contentRootLayout
         val sectionSpecs = listOf(
             SectionSpec(
-                title = "Ana Panel",
+                title = "Home",
                 container = binding.homeSection,
                 anchorIds = listOf(
                     R.id.refreshStatusButton,
@@ -553,12 +553,12 @@ class MainActivity : AppCompatActivity() {
                 ),
             ),
             SectionSpec(
-                title = "Kisayollar",
+                title = "Shortcuts",
                 container = binding.shortcutsSection,
                 anchorIds = emptyList(),
             ),
             SectionSpec(
-                title = "Dosyalar",
+                title = "Files",
                 container = binding.filesSection,
                 anchorIds = listOf(
                     R.id.filesHeading,
@@ -582,7 +582,7 @@ class MainActivity : AppCompatActivity() {
                 ),
             ),
             SectionSpec(
-                title = "Sistem",
+                title = "System",
                 container = binding.systemSection,
                 anchorIds = listOf(
                     R.id.processHeading,
@@ -613,7 +613,7 @@ class MainActivity : AppCompatActivity() {
                 ),
             ),
             SectionSpec(
-                title = "Bildirimler",
+                title = "Notifications",
                 container = binding.notificationsSection,
                 anchorIds = listOf(
                     R.id.notificationSettingsHeading,
@@ -636,7 +636,7 @@ class MainActivity : AppCompatActivity() {
                 ),
             ),
             SectionSpec(
-                title = "Ayarlar",
+                title = "Settings",
                 container = binding.settingsSection,
                 anchorIds = listOf(
                     R.id.openGettingStartedGuideButton,
@@ -736,7 +736,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun applySelectedPcScopedState(restoreLivePreview: Boolean) {
         val scopedPcId = selectedPcIdOrNull()
-        val selectedPcName = store.pairedPcName.ifBlank { "Secili PC" }
+        val selectedPcName = store.pairedPcName.ifBlank { "Selected PC" }
         store.migrateLegacyPcScopedStateIfNeeded(scopedPcId)
 
         stopClipboardSync()
@@ -753,14 +753,14 @@ class MainActivity : AppCompatActivity() {
 
         setClipboardSyncSwitchChecked(clipboardEnabled)
         binding.clipboardSyncStatusText.text = when {
-            scopedPcId == null -> "Clipboard senkronizasyonu icin once bir PC sec."
-            clipboardEnabled -> "$selectedPcName icin clipboard senkronizasyonu hazir. Telefonda kopyalanan yazi uygulama acikken gonderilir."
-            else -> "$selectedPcName icin clipboard senkronizasyonu kapali."
+            scopedPcId == null -> "Select a PC first to use clipboard sync."
+            clipboardEnabled -> "Clipboard sync is ready for $selectedPcName. Text copied on the phone is sent while the app is open."
+            else -> "Clipboard sync is off for $selectedPcName."
         }
         binding.livePreviewStatusText.text = when {
-            scopedPcId == null -> "Canli ekran onizlemesi icin once bir PC sec."
-            livePreviewEnabled -> "$selectedPcName icin canli ekran onizlemesi hazir (${activeLivePreviewProfile.label})."
-            else -> "$selectedPcName icin canli ekran onizlemesi kapali."
+            scopedPcId == null -> "Select a PC first for live screen preview."
+            livePreviewEnabled -> "Live screen preview is ready for $selectedPcName (${activeLivePreviewProfile.label})."
+            else -> "Live screen preview is off for $selectedPcName."
         }
 
         shortcutItems.clear()
@@ -830,9 +830,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateNotificationLimitLabels() {
         val limit = currentNotificationDisplayLimit()
-        binding.notificationCenterHeading.text = "Son $limit bildirim"
+        binding.notificationCenterHeading.text = "Last $limit notifications"
         if (lastRenderedNotifications.isEmpty()) {
-            binding.notificationStatusText.text = "Son $limit bildirim burada gorunecek."
+            binding.notificationStatusText.text = "The last $limit notifications will appear here."
         }
     }
 
@@ -875,23 +875,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         val nextCheckAt = if (store.backgroundPermissionLastCheckedAt == 0L) {
-            "Ilk kontrol bekleniyor."
+            "Initial check pending."
         } else {
             val nextCheck = store.backgroundPermissionLastCheckedAt + BACKGROUND_PERMISSION_RECHECK_MS
-            "Bir sonraki otomatik kontrol: ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(nextCheck)}"
+            "Next automatic check: ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(nextCheck)}"
         }
 
         val limitationNote =
-            "Not: Android 10+ kisiti nedeniyle telefondan PC'ye pano senkronu sadece uygulama acikken calisir."
+            "Note: because of the Android 10+ restriction, phone-to-PC clipboard sync works only while the app is open."
         val manufacturerNote = if (isMiuiFamilyDevice()) {
-            "Bu cihazda ayrica Otomatik baslat ve pil kisitini Sinirsiz/Yok olarak ayarlamak gerekebilir."
+            "On this device you may also need to enable Auto Start and set battery restrictions to Unlimited/None."
         } else {
             null
         }
 
         binding.backgroundPermissionStatusText.text = if (isGranted) {
             buildString {
-                append("Arka plan calisma izni acik. Bildirimler, canli baglanti ve PC'den telefona gelen pano daha stabil calisir.")
+                append("Background activity permission is enabled. Notifications, the live connection, and clipboard updates from the PC will work more reliably.")
                 append('\n')
                 append(limitationNote)
                 manufacturerNote?.let {
@@ -903,7 +903,7 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             buildString {
-                append("Arka plan calisma izni kapali gorunuyor. Batarya optimizasyonu bildirimleri, canli baglantiyi ve PC'den telefona gelen panoyu zayiflatabilir.")
+                append("Background activity permission appears to be off. Battery optimization may weaken notifications, the live connection, and clipboard updates from the PC.")
                 append('\n')
                 append(limitationNote)
                 manufacturerNote?.let {
@@ -919,20 +919,20 @@ class MainActivity : AppCompatActivity() {
 
         if (!isGranted && promptIfDue) {
             AlertDialog.Builder(this)
-                .setTitle("Arka plan izni onerilir")
+                .setTitle("Background permission recommended")
                 .setMessage(
                     buildString {
-                        append("Batarya optimizasyonundan muaf olmak bildirimler, canli baglanti ve PC'den telefona gelen pano icin daha sagliklidir.")
+                        append("Exempting the app from battery optimization improves notifications, the live connection, and clipboard updates from the PC.")
                         append("\n\n")
-                        append("Telefon -> PC clipboard senkronu ise Android kisiti nedeniyle diger uygulamalarda arka planda calismaz; bunun icin uygulamanin acik olmasi gerekir.")
+                        append("Phone-to-PC clipboard sync does not work while other apps are in the foreground because of Android restrictions; the app must be open for that direction.")
                         if (isMiuiFamilyDevice()) {
                             append("\n\n")
-                            append("Xiaomi/Redmi/POCO cihazlarda ayrica Otomatik baslat ve pil kisitini Sinirsiz/Yok yapman gerekebilir.")
+                            append("On Xiaomi/Redmi/POCO devices you may also need to enable Auto Start and set battery restrictions to Unlimited/None.")
                         }
                     },
                 )
-                .setPositiveButton("Ayarı ac") { _, _ -> requestBackgroundPermission() }
-                .setNegativeButton("Sonra", null)
+                .setPositiveButton("Open settings") { _, _ -> requestBackgroundPermission() }
+                .setNegativeButton("Later", null)
                 .create()
                 .also { showLocalizedDialog(it) }
         }
@@ -941,7 +941,7 @@ class MainActivity : AppCompatActivity() {
     private fun requestBackgroundPermission() {
         if (isBackgroundPermissionGranted()) {
             refreshBackgroundPermissionState(promptIfDue = false, forceTimestampUpdate = true)
-            showToast("Arka plan izni zaten acik.")
+            showToast("Background permission is already enabled.")
             return
         }
 
@@ -958,13 +958,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (targetIntent == null) {
-            showToast("Bu cihazda batarya optimizasyon ayari acilamadi.")
+            showToast("The battery optimization screen could not be opened on this device.")
             return
         }
 
         startActivity(targetIntent)
         if (isMiuiFamilyDevice()) {
-            showToast("Xiaomi/Redmi/POCO cihazlarda ayrica Otomatik baslat ve pil kisitini Sinirsiz/Yok yap.")
+            showToast("On Xiaomi/Redmi/POCO devices you may also need to enable Auto Start and set battery restrictions to Unlimited/None.")
         }
     }
 
@@ -1039,23 +1039,23 @@ class MainActivity : AppCompatActivity() {
     private fun updateWorkerCapabilityStatusViews() {
         val status = when {
             store.workerUrl.isBlank() -> Triple(
-                "Worker dosya modu: Worker URL bekleniyor.",
-                "Secili Worker: URL girilmedi.",
+                "Worker file mode: waiting for Worker URL.",
+                "Selected Worker: no URL entered.",
                 R.color.text_secondary,
             )
             workerSupportsR2 == true -> Triple(
-                "Worker dosya modu: R2 aktif. Buyuk dosya aktarimi hazir.",
-                "Secili Worker: R2 destekliyor.",
+                "Worker file mode: R2 active. Large file transfer is ready.",
+                "Selected Worker: supports R2.",
                 R.color.success_green,
             )
             workerSupportsR2 == false -> Triple(
-                "Worker dosya modu: Legacy. Dosya limiti 256 KB.",
-                "Secili Worker: R2 yok, legacy mod aktif.",
+                "Worker file mode: Legacy. File limit: 256 KB.",
+                "Selected Worker: no R2, legacy mode is active.",
                 R.color.warning_amber,
             )
             else -> Triple(
-                "Worker dosya modu: Kontrol ediliyor. Gerekirse otomatik fallback denenir.",
-                "Secili Worker: R2 destegi kontrol ediliyor.",
+                "Worker file mode: checking. Automatic fallback will be tried if needed.",
+                "Selected Worker: checking R2 support.",
                 R.color.text_secondary,
             )
         }
@@ -1089,9 +1089,9 @@ class MainActivity : AppCompatActivity() {
             if (showFeedback) {
                 runOnUiThread {
                     val message = when (detectedSupport) {
-                        true -> "Worker R2 destekliyor. Dosya aktarimi gelismis modda calisacak."
-                        false -> "Worker R2 desteklemiyor. Dosya aktarimi legacy modda calisacak."
-                        null -> "Worker dosya modu belirlenemedi. Uygulama gerektiğinde otomatik fallback deneyecek."
+                        true -> "The Worker supports R2. File transfer will use advanced mode."
+                        false -> "The Worker does not support R2. File transfer will use legacy mode."
+                        null -> "The Worker file mode could not be determined. The app will try automatic fallback when needed."
                     }
                     appendLog(message)
                 }
@@ -1131,16 +1131,16 @@ class MainActivity : AppCompatActivity() {
             renderShortcutGrid()
             showToast(
                 if (isShortcutReorderMode) {
-                    "Siralama modu acildi. Karti basili tutup surukleyebilirsin."
+                    "Reorder mode is enabled. Long press a tile and drag it."
                 } else {
-                    "Siralama modu kapatildi."
+                    "Reorder mode turned off."
                 },
             )
         }
         binding.shortcutGrid.setOnDragListener { _, event -> handleShortcutGridDrag(event) }
         binding.saveConfigButton.setOnClickListener {
             persistLocalConfig()
-            appendLog("Yerel ayarlar kaydedildi.")
+                appendLog("Local settings saved.")
             refreshWorkerCapabilities(showFeedback = true)
         }
         binding.requestBackgroundPermissionButton.setOnClickListener {
@@ -1193,9 +1193,9 @@ class MainActivity : AppCompatActivity() {
         binding.markAllNotificationsReadButton.setOnClickListener { markAllNotificationsRead() }
 
         binding.lockButton.setOnClickListener { sendAwaitedCommand("Ekran kilitle", "lock") }
-        binding.shutdownButton.setOnClickListener { sendAwaitedCommand("Bilgisayari zorla kapat", "shutdown") }
+        binding.shutdownButton.setOnClickListener { sendAwaitedCommand("Force shutdown the computer", "shutdown") }
         binding.restartButton.setOnClickListener { sendAwaitedCommand("Zorla yeniden baslat", "restart") }
-        binding.logoffButton.setOnClickListener { sendAwaitedCommand("Oturumu kapat", "logoff") }
+        binding.logoffButton.setOnClickListener { sendAwaitedCommand("Log off", "logoff") }
         binding.unpairButton.setOnClickListener { unpairCurrentPc() }
 
         binding.playPauseButton.setOnClickListener {
@@ -1486,9 +1486,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("Ilk kurulum rehberi")
+            .setTitle("Initial setup guide")
             .setView(scrollView)
-            .setPositiveButton("Kapat", null)
+            .setPositiveButton("Close", null)
             .create()
             .also { showLocalizedDialog(it) }
     }
@@ -1502,9 +1502,9 @@ class MainActivity : AppCompatActivity() {
             runCatching {
                 api.registerToken(store.workerUrl, store.ownerToken, store.deviceName, store.fcmToken)
             }.onSuccess {
-                runOnUiThread { appendLog("Token worker'a bildirildi.") }
+                runOnUiThread { appendLog("The token was reported to the Worker.") }
             }.onFailure { error ->
-                runOnUiThread { appendLog("Token guncellenemedi: ${friendlyErrorMessage(error.message, "Token guncellenemedi.")}") }
+                runOnUiThread { appendLog("The token could not be updated: ${friendlyErrorMessage(error.message, "The token could not be updated.")}") }
             }
         }
     }
@@ -1533,10 +1533,10 @@ class MainActivity : AppCompatActivity() {
             if (pcs.isEmpty()) {
                 runOnUiThread {
                     clearPairingState(resetLogs = false)
-                    binding.statusText.text = "Eslestirilmis PC bulunamadi."
+                    binding.statusText.text = "No paired PC found."
                     renderUsageSummaryPlaceholder()
                     renderPcSummary(emptyList())
-                    appendLog("Hesaba bagli PC bulunamadi.")
+                    appendLog("No PC is linked to this account.")
                 }
                 return@runInBackground
             }
@@ -1552,7 +1552,7 @@ class MainActivity : AppCompatActivity() {
                 applySelectedPcScopedState(restoreLivePreview = true)
                 binding.statusText.text = buildString {
                     append("${selectedPc.name} -> ${selectedPc.status}")
-                    append(" | son olay: ${selectedPc.lastEventType}")
+                        append(" | latest event: ${selectedPc.lastEventType}")
                     if (selectedPc.lastSeenAt > 0L) {
                         append('\n')
                         append("Son gorulme: ")
@@ -1562,7 +1562,7 @@ class MainActivity : AppCompatActivity() {
                 refreshUsageSummary()
                 loadNotificationSettings()
                 loadNotificationCenter()
-                appendLog("PC durumu guncellendi.")
+                appendLog("PC status refreshed.")
             }
         }
     }
@@ -1570,10 +1570,10 @@ class MainActivity : AppCompatActivity() {
     private fun renderPcSummary(pcs: List<RemotePcSummary>) {
         availablePcs = pcs
         binding.pcListSummaryText.text = if (pcs.isEmpty()) {
-            "Hesaba bagli PC bulunmuyor."
+            "No PC is linked to this account."
         } else {
             pcs.joinToString(separator = "\n") { pc ->
-                val selectedLabel = if (pc.id == store.pairedPcId) " [SECILI]" else ""
+                val selectedLabel = if (pc.id == store.pairedPcId) " [SELECTED]" else ""
                 "${pc.name} • ${pc.status} • ${pc.lastEventType}$selectedLabel"
             }
         }
@@ -1583,9 +1583,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateSelectedPcDisplay(name: String?, status: String?) {
         binding.selectedPcText.text = if (name.isNullOrBlank()) {
-            "Secili PC: -"
+            "Selected PC: -"
         } else {
-            "Secili PC: $name"
+            "Selected PC: $name"
         }
         renderSelectedPcStatusBadge(status)
     }
@@ -1598,10 +1598,10 @@ class MainActivity : AppCompatActivity() {
 
         val normalized = status.trim().lowercase()
         val (label, colorRes) = when {
-            normalized.contains("online") || normalized.contains("connected") -> "Cevrim ici" to R.color.success_green
-            normalized.contains("sleep") || normalized.contains("away") -> "Uykuda" to R.color.warning_amber
-            normalized.contains("offline") || normalized.contains("disconnected") -> "Cevrim disi" to R.color.status_offline
-            normalized.contains("starting") || normalized.contains("busy") -> "Hazirlaniyor" to R.color.warning_amber
+            normalized.contains("online") || normalized.contains("connected") -> "Online" to R.color.success_green
+            normalized.contains("sleep") || normalized.contains("away") -> "Sleeping" to R.color.warning_amber
+            normalized.contains("offline") || normalized.contains("disconnected") -> "Offline" to R.color.status_offline
+            normalized.contains("starting") || normalized.contains("busy") -> "Preparing" to R.color.warning_amber
             else -> status.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.color.surface_outline
         }
 
@@ -1619,7 +1619,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showPcSelectionDialog() {
         if (availablePcs.isEmpty()) {
-            showToast("Secilecek PC bulunamadi. Once durum yenile.")
+            showToast("No PC is available to select. Refresh the status first.")
             return
         }
 
@@ -1634,7 +1634,7 @@ class MainActivity : AppCompatActivity() {
         }.toTypedArray()
 
         AlertDialog.Builder(this)
-            .setTitle("Secili PC'yi degistir")
+            .setTitle("Change selected PC")
             .setItems(labels) { _, index ->
                 val selected = availablePcs[index]
                 store.pairedPcId = selected.id
@@ -1642,11 +1642,11 @@ class MainActivity : AppCompatActivity() {
                 updateSelectedPcDisplay(selected.name, selected.status)
                 applySelectedPcScopedState(restoreLivePreview = true)
                 renderPcSummary(availablePcs)
-                appendLog("PC secildi: ${selected.name}")
+                appendLog("PC selected: ${selected.name}")
                 loadNotificationCenter()
                 refreshUsageSummary()
             }
-            .setNegativeButton("Kapat", null)
+            .setNegativeButton("Close", null)
             .create()
             .also { showLocalizedDialog(it) }
     }
@@ -1668,14 +1668,14 @@ class MainActivity : AppCompatActivity() {
                 binding.wakeNotificationSwitch.isChecked = settings.optBoolean("wakeEnabled", true)
                 binding.offlineNotificationSwitch.isChecked = settings.optBoolean("offlineEnabled", true)
                 binding.commandFailedNotificationSwitch.isChecked = settings.optBoolean("commandFailedEnabled", true)
-                binding.notificationSettingsText.text = "Bildirim ayarlari yuklendi."
+                binding.notificationSettingsText.text = "Notification settings loaded."
             }
         }
     }
 
     private fun saveNotificationSettings() {
         if (store.workerUrl.isBlank() || store.ownerToken.isBlank()) {
-            showToast("Once PC ile esles.")
+            showToast("Pair with a PC first.")
             return
         }
 
@@ -1700,8 +1700,8 @@ class MainActivity : AppCompatActivity() {
             )
 
             runOnUiThread {
-                binding.notificationSettingsText.text = "Bildirim ayarlari kaydedildi."
-                appendLog("Bildirim ayarlari guncellendi.")
+                binding.notificationSettingsText.text = "Notification settings saved."
+                appendLog("Notification settings updated.")
                 loadNotificationCenter()
             }
         }
@@ -1738,7 +1738,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             runOnUiThread {
-                binding.notificationStatusText.text = "Son $displayLimit bildirim • okunmamis: $unreadCount"
+            binding.notificationStatusText.text = "Last $displayLimit notifications • unread: $unreadCount"
                 renderNotificationCenter(notifications.take(displayLimit), unreadCount)
             }
         }
@@ -1752,7 +1752,7 @@ class MainActivity : AppCompatActivity() {
         if (notifications.isEmpty()) {
             binding.notificationCenterContainer.addView(
                 TextView(this).apply {
-                    text = "Son bildirim yok."
+                    text = "No recent notifications."
                     setTextColor(getColor(R.color.text_secondary))
                 },
             )
@@ -1790,7 +1790,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (unreadCount > 0) {
-            appendLog("Okunmamis bildirim sayisi: $unreadCount")
+            appendLog("Unread notification count: $unreadCount")
         }
     }
 
@@ -1811,7 +1811,7 @@ class MainActivity : AppCompatActivity() {
         runInBackground {
             api.markAllNotificationsRead(store.workerUrl, store.ownerToken)
             runOnUiThread {
-                binding.notificationStatusText.text = "Tum bildirimler okundu yapildi."
+            binding.notificationStatusText.text = "All notifications were marked as read."
                 loadNotificationCenter()
             }
         }
@@ -1825,14 +1825,14 @@ class MainActivity : AppCompatActivity() {
 
         AlertDialog.Builder(this)
             .setTitle("Eslesmeyi kaldir")
-            .setMessage("${store.pairedPcName.ifBlank { "Bu PC" }} ile telefon eslesmesini kaldirmak istiyor musun?")
+                .setMessage("Do you want to remove the phone pairing for ${store.pairedPcName.ifBlank { "this PC" }}?")
             .setPositiveButton("Kaldir") { _, _ ->
                 persistLocalConfig()
                 runInBackground {
                     val pc = api.unpairPc(store.workerUrl, store.ownerToken, store.pairedPcId)
                     runOnUiThread {
-                        appendLog("${pc.optString("name", "PC")} eslesmesi telefondan kaldirildi.")
-                        binding.statusText.text = "${pc.optString("name", "PC")} kaldirildi. Kalan cihazlar yenileniyor."
+                        appendLog("${pc.optString("name", "PC")} pairing was removed from the phone.")
+                        binding.statusText.text = "${pc.optString("name", "PC")} was removed. Refreshing remaining devices."
                         refreshPcState()
                         refreshUsageSummary()
                     }
@@ -1845,7 +1845,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadProcessList(scope: String) {
         sendAwaitedCommand(
-            label = if (scope == "all") "Tum islemleri listele" else "Acik uygulamalari listele",
+            label = if (scope == "all") "List all processes" else "List open apps",
             type = "process-list",
             payload = JSONObject().put("scope", scope),
         ) { payload ->
@@ -1872,7 +1872,7 @@ class MainActivity : AppCompatActivity() {
                 binding.resultText.text = if (scope == "all") {
                     "Listelenecek islem bulunamadi."
                 } else {
-                    "Acik uygulama bulunamadi."
+                        "No open apps were found."
                 }
             }
         }
@@ -1890,9 +1890,9 @@ class MainActivity : AppCompatActivity() {
             isAllCaps = false
             isEnabled = false
             text = if (scope == "all") {
-                "Tum islemler (${processes.size})"
+                    "All processes (${processes.size})"
             } else {
-                "Acik / gorunen uygulamalar (${processes.size})"
+                    "Open / visible apps (${processes.size})"
             }
         }
         binding.processListContainer.addView(header)
@@ -1949,7 +1949,7 @@ class MainActivity : AppCompatActivity() {
             row.addView(
                 Button(this).apply {
                     isAllCaps = false
-                    text = "Kapat"
+                    text = "Close"
                     setOnClickListener {
                         updateSelectedProcess(process)
                         killSelectedProcess()
@@ -1966,7 +1966,7 @@ class MainActivity : AppCompatActivity() {
         val processId = selectedProcessId
 
         if (processName.isBlank()) {
-            showToast("Once listeden bir process sec.")
+            showToast("Select a process from the list first.")
             return
         }
 
@@ -1976,14 +1976,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         sendAwaitedCommand(
-            label = "Uygulamayi kapat",
+                label = "Close app",
             type = "app-kill",
             payload = payload,
         )
     }
 
     private fun loadSystemInfo() {
-        sendAwaitedCommand("Sistem bilgisi", "system-info") { payload ->
+            sendAwaitedCommand("System information", "system-info") { payload ->
             val memory = payload.optJSONObject("memory") ?: JSONObject()
             val drives = payload.optJSONArray("drives") ?: JSONArray()
             val networks = payload.optJSONArray("networkAddresses") ?: JSONArray()
@@ -2315,7 +2315,7 @@ class MainActivity : AppCompatActivity() {
                     shortcutDropHandled = moved
                     clearShortcutDragState(refreshGrid = true)
                     if (moved) {
-                        showToast("Kisayol sirasi guncellendi.")
+                        showToast("Shortcut order updated.")
                     }
                     moved
                 }
@@ -2415,7 +2415,7 @@ class MainActivity : AppCompatActivity() {
         val insertIndex = if (sourceIndex < targetIndex) targetIndex - 1 else targetIndex
         shortcutItems.add(insertIndex.coerceIn(0, shortcutItems.size), movedItem)
         persistShortcutItems()
-        appendLog("Kisayol sirasi guncellendi: ${movedItem.title}")
+        appendLog("Shortcut order updated: ${movedItem.title}")
         return true
     }
 
@@ -2537,7 +2537,7 @@ class MainActivity : AppCompatActivity() {
 
         val dialog = AlertDialog.Builder(this)
             .setView(container)
-            .setNegativeButton("Kapat", null)
+            .setNegativeButton("Close", null)
             .create()
 
         rowOne.addView(createShortcutActionButton("Calistir") {
@@ -2826,7 +2826,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle(if (existing == null) "Kisayol ekle" else "Kisayolu duzenle")
             .setView(scrollView)
             .setNegativeButton("Iptal", null)
-            .setPositiveButton(if (existing == null) "Kaydet" else "Guncelle", null)
+            .setPositiveButton(if (existing == null) "Save" else "Update", null)
             .create()
 
         browseButton.setOnClickListener {
@@ -3148,7 +3148,7 @@ class MainActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this)
             .setTitle(if (mode == ShortcutPickerMode.APPLICATION) "PC'den uygulama veya kisayol sec" else "PC'den klasor sec")
             .setView(dialogLayout)
-            .setNegativeButton("Kapat", null)
+            .setNegativeButton("Close", null)
             .create()
 
         var currentPath = currentRemotePath.ifBlank { binding.filesPathInput.text.toString().trim() }
@@ -3419,7 +3419,7 @@ class MainActivity : AppCompatActivity() {
     private fun canUseShortcutCommands(showFeedback: Boolean): Boolean {
         val ready = store.workerUrl.isNotBlank() && store.ownerToken.isNotBlank() && store.pairedPcId.isNotBlank()
         if (!ready && showFeedback) {
-            showToast("Kisayollar icin once Worker ayarini girip bir PC sec.")
+            showToast("Enter the Worker settings and select a PC first for shortcuts.")
         }
         return ready
     }
@@ -3596,7 +3596,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun downloadRemoteFileViaR2(path: String) {
-        updateTransferProgress("Dosya indir", 5, "R2 alani hazirlaniyor")
+        updateTransferProgress("Download file", 5, "Preparing R2 area")
         val reservation = api.reserveFile(
             workerUrl = store.workerUrl,
             ownerToken = store.ownerToken,
@@ -3638,15 +3638,15 @@ class MainActivity : AppCompatActivity() {
 
         runOnUiThread {
             renderCommandSummary("Dosya indir", result)
-            renderTransferComplete("Dosya hazir. Kaydetme konumunu sec.")
-            appendLog("Dosya indirildi, telefona kaydetmeye hazir.")
+                renderTransferComplete("The file is ready. Choose where to save it.")
+                appendLog("The file was downloaded and is ready to be saved on the phone.")
             refreshUsageSummary()
             createDocumentLauncher.launch(pendingDownloadFileName)
         }
     }
 
     private fun downloadRemoteFileLegacy(path: String) {
-        updateTransferProgress("Dosya indir", 10, "Legacy dosya modu ile hazirlaniyor")
+        updateTransferProgress("Download file", 10, "Preparing in legacy file mode")
         val command = api.sendCommandAndAwaitResult(
             workerUrl = store.workerUrl,
             ownerToken = store.ownerToken,
@@ -3671,8 +3671,8 @@ class MainActivity : AppCompatActivity() {
 
         runOnUiThread {
             renderCommandSummary("Dosya indir", result)
-            renderTransferComplete("Legacy dosya hazir. Kaydetme konumunu sec.")
-            appendLog("Dosya legacy modda indirildi, telefona kaydetmeye hazir.")
+                renderTransferComplete("The legacy file is ready. Choose where to save it.")
+                appendLog("The file was downloaded in legacy mode and is ready to be saved on the phone.")
             refreshUsageSummary()
             createDocumentLauncher.launch(pendingDownloadFileName)
         }
@@ -4187,7 +4187,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun previewRemoteFileViaR2(entry: RemoteEntry) {
-        updateTransferProgress("Dosya onizleme", 5, "Onizleme dosyasi hazirlaniyor")
+        updateTransferProgress("File preview", 5, "Preparing preview file")
         val reservation = api.reserveFile(
             workerUrl = store.workerUrl,
             ownerToken = store.ownerToken,
@@ -4234,7 +4234,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun previewRemoteFileLegacy(entry: RemoteEntry) {
-        updateTransferProgress("Dosya onizleme", 15, "Legacy dosya modu ile hazirlaniyor")
+        updateTransferProgress("File preview", 15, "Preparing in legacy file mode")
         val command = api.sendCommandAndAwaitResult(
             workerUrl = store.workerUrl,
             ownerToken = store.ownerToken,
@@ -4347,7 +4347,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderTransferError(message: String) {
         binding.transferProgressBar.progress = 0
-        binding.transferStatusText.text = friendlyErrorMessage(message, "Dosya aktariminda hata olustu.")
+        binding.transferStatusText.text = friendlyErrorMessage(message, "A file transfer error occurred.")
     }
 
     private fun updateSelectedProcess(process: RemoteProcessEntry?) {
@@ -4457,8 +4457,8 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("PC Screenshot")
             .setView(imageView)
-            .setPositiveButton("Kapat", null)
-            .setNeutralButton("Kaydet") { _, _ ->
+            .setPositiveButton("Close", null)
+            .setNeutralButton("Save") { _, _ ->
                 saveCurrentScreenshot()
             }
             .create()
@@ -4807,13 +4807,13 @@ class MainActivity : AppCompatActivity() {
         lastRenderedNotifications = emptyList()
         updateSelectedPcDisplay(null, null)
         binding.unpairButton.isEnabled = false
-        binding.notificationSettingsText.text = "Bildirim tercihlerini buradan yonetebilirsin."
+        binding.notificationSettingsText.text = "Manage your notification preferences here."
         updateNotificationLimitLabels()
         renderPcSummary(emptyList())
         binding.processListContainer.removeAllViews()
         binding.remoteFilesContainer.removeAllViews()
         binding.notificationCenterContainer.removeAllViews()
-        binding.systemInfoText.text = "Sistem bilgileri burada gorunecek."
+        binding.systemInfoText.text = "System information will appear here."
         lastRemoteEntries = emptyList()
         selectedRemoteEntries.clear()
         updateSelectedProcess(null)
@@ -4928,28 +4928,28 @@ class MainActivity : AppCompatActivity() {
             lower.contains("\"error_code\":1101")
                 || lower.contains("error code: 1101")
                 || lower.contains("worker threw exception") ->
-                t("Worker hatasi (1101): backend kurulumunda eksik adim olabilir. d1-tablolari-onar-yardimcisi.bat calistirip Worker'i yeniden deploy et.")
+                t("Worker error (1101): a backend setup step may be missing. Run repair-d1-tables-helper.bat and redeploy the Worker.")
 
             lower.contains("no such host is known")
                 || lower.contains("name or service not known")
                 || lower.contains("bilinen böyle bir ana bilgisayar yok")
                 || lower.contains("bilinen boyle bir ana bilgisayar yok") ->
-                t("Worker URL hatali veya erisilemiyor. Deploy ciktisindaki tam https://...workers.dev adresini kullan.")
+                t("The Worker URL is incorrect or unreachable. Use the full https://...workers.dev address from the deploy output.")
 
             lower.contains("\"status\":401")
                 || lower.contains("\"status\":403")
                 || lower.contains("401 unauthorized")
                 || lower.contains("403 forbidden") ->
-                t("Yetki hatasi: oturum bilgisi gecersiz olabilir. PC ile yeniden esles.")
+                t("Authorization error: the session information may be invalid. Pair with the PC again.")
 
             lower.contains("\"status\":404")
                 || lower.contains("404 not found") ->
-                t("Kaynak bulunamadi: Worker URL, secili PC veya ilgili veri eksik olabilir.")
+                t("Resource not found: the Worker URL, selected PC, or related data may be missing.")
 
             lower.contains("timeout")
                 || lower.contains("timed out")
                 || lower.contains("zaman asimina ugradi") ->
-                t("Istek zaman asimina ugradi. Baglantiyi ve Worker durumunu kontrol edip tekrar dene.")
+                t("The request timed out. Check the connection and Worker status, then try again.")
 
             normalized.startsWith("{") || normalized.startsWith("[") -> t(fallback)
             else -> t(normalized)
