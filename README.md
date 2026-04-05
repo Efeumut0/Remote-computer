@@ -10,10 +10,10 @@ This package is prepared for users who want to create their own Cloudflare Worke
    - `apk`
    - `backend`
 3. Helper files will also be in the main folder:
-   - `backend-kurulum-yardimcisi.bat`
-   - `apk-build-yardimcisi.bat`
-   - `d1-tablolari-onar-yardimcisi.bat`
-   - `r2-sonradan-ekle-yardimcisi.bat`
+   - `backend-setup-helper.bat`
+   - `apk-build-helper.bat`
+   - `repair-d1-tables-helper.bat`
+   - `add-r2-later-helper.bat`
 
 ## 2. Windows agent files
 
@@ -44,7 +44,7 @@ Do not separate these files. `PcRemoteAgent.exe` should not be moved alone.
 
 ## 5. Start the backend setup
 
-1. Run `backend-kurulum-yardimcisi.bat` in the main folder.
+1. Run `backend-setup-helper.bat` in the main folder.
 2. This script:
    - checks `node` and `npm`
    - checks required files in the `backend` folder
@@ -87,7 +87,7 @@ Note: D1 is required for this setup. R2 is optional. If R2 is not enabled on the
 1. In Firebase, click the gear icon and open `Project settings`.
 2. Open the `Service accounts` tab.
 3. Use `Generate new private key` and download the JSON file.
-4. `backend-kurulum-yardimcisi.bat` will ask for this file path.
+4. `backend-setup-helper.bat` will ask for this file path.
 5. The script reads:
    - `project_id`
    - `client_email`
@@ -96,7 +96,7 @@ Note: D1 is required for this setup. R2 is optional. If R2 is not enabled on the
 
 ## 8. Worker URL
 
-1. `backend-kurulum-yardimcisi.bat` runs `npx wrangler deploy` near the end.
+1. `backend-setup-helper.bat` runs `npx wrangler deploy` near the end.
 2. After deploy finishes, a `workers.dev` address is created.
 3. That address is your `Worker URL`.
 4. Use the same address in both the Windows agent and the Android app.
@@ -109,14 +109,14 @@ Note: D1 is required for this setup. R2 is optional. If R2 is not enabled on the
 ## 9. If D1 tables are missing
 
 1. If the Windows agent shows `error code: 1101`, the Worker may be deployed but the D1 schema, Durable Object binding, or the generated `wrangler.jsonc` may still be incomplete.
-2. Run `d1-tablolari-onar-yardimcisi.bat` in the main folder.
+2. Run `repair-d1-tables-helper.bat` in the main folder.
 3. That helper rebuilds the Worker config from your current `wrangler.jsonc`, reapplies the D1 migrations, and redeploys the current Worker code.
 4. It also runs a quick `/health` and `/api/mobile/pair` verification after redeploy.
 5. After it finishes, click `Save / Connect` again in the Windows agent. You can keep using the same Worker URL and you do not need a new APK build.
 
 ## 10. If you want to add R2 later
 
-1. Run `r2-sonradan-ekle-yardimcisi.bat` in the main folder.
+1. Run `add-r2-later-helper.bat` in the main folder.
 2. It reads the current `wrangler.jsonc`.
 3. It only asks for the R2 bucket name.
 4. It creates the bucket, updates the config, and redeploys the Worker.
@@ -133,7 +133,7 @@ Note: D1 is required for this setup. R2 is optional. If R2 is not enabled on the
 
 ## 12. Build the APK
 
-1. Run `apk-build-yardimcisi.bat` in the main folder.
+1. Run `apk-build-helper.bat` in the main folder.
 2. The Android SDK usually comes with Android Studio. If Android Studio is not installed, the SDK is probably missing too.
 3. If Android Studio is installed, you can find the SDK path in `Android Studio -> More Actions -> SDK Manager` or `Settings -> Android SDK`.
 4. This script checks:
@@ -161,10 +161,11 @@ Note: D1 is required for this setup. R2 is optional. If R2 is not enabled on the
 - If the Android SDK cannot be found automatically, the script will ask you for the SDK path.
 - The Android SDK usually comes with Android Studio.
 - After D1 is created, you can check it under `Storage & Databases -> D1`. After R2 is created, check `R2 Object Storage`. After Worker deploy, check `Workers & Pages`.
-- If R2 is disabled, the main setup can still finish. You can add R2 later with `r2-sonradan-ekle-yardimcisi.bat`.
+- If R2 is disabled, the main setup can still finish. You can add R2 later with `add-r2-later-helper.bat`.
 - The Worker URL only exists after deploy.
 - In the Worker URL field, enter only the exact full `https://...workers.dev` address from deploy output.
 - If the EXE does not start, one of the required `.dll` or `.json` files is probably missing.
 - If pairing fails, the Worker URL may be wrong or the Windows agent may not be connected.
-- If the agent shows `error code: 1101`, run `d1-tablolari-onar-yardimcisi.bat`. That helper repairs the Worker config, reapplies the migrations, and redeploys the Worker.
+- If the agent shows `error code: 1101`, run `repair-d1-tables-helper.bat`. That helper repairs the Worker config, reapplies the migrations, and redeploys the Worker.
 - If notifications do not arrive, check the Firebase service account and Worker secret steps.
+

@@ -148,7 +148,7 @@ if /I "%ENABLE_R2%"=="Y" (
     if errorlevel 1 (
         echo.
         echo [WARNING] The R2 bucket could not be created.
-        echo You can continue without R2 and add it later with r2-sonradan-ekle-yardimcisi.bat.
+        echo You can continue without R2 and add it later with add-r2-later-helper.bat.
         set "CONTINUE_WITHOUT_R2=Y"
         set /p CONTINUE_WITHOUT_R2="Continue without R2? [Y/N, default: Y]: "
         if /I "!CONTINUE_WITHOUT_R2!"=="" set "CONTINUE_WITHOUT_R2=Y"
@@ -244,8 +244,8 @@ echo.
 echo Setup completed.
 echo Worker URL file created: %WORKER_URL_FILE%
 echo Use the same Worker URL in both the Windows agent and the Android app.
-if /I "%ENABLE_R2%"=="N" echo If needed, you can add R2 later with r2-sonradan-ekle-yardimcisi.bat.
-echo If the agent later shows 1101, run the latest d1-tablolari-onar-yardimcisi.bat from the main folder.
+if /I "%ENABLE_R2%"=="N" echo If needed, you can add R2 later with add-r2-later-helper.bat.
+echo If the agent later shows 1101, run the latest repair-d1-tables-helper.bat from the main folder.
 echo.
 pause
 goto :cleanup_success
@@ -297,3 +297,4 @@ echo.
 pause
 popd
 exit /b 1
+

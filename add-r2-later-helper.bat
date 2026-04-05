@@ -24,7 +24,7 @@ echo.
 
 if not exist "%CONFIG_FILE%" (
     echo [ERROR] wrangler.jsonc was not found.
-    echo Run backend-kurulum-yardimcisi.bat first.
+    echo Run backend-setup-helper.bat first.
     pause
     exit /b 1
 )
@@ -150,3 +150,4 @@ echo.
 pause
 popd
 exit /b 1
+

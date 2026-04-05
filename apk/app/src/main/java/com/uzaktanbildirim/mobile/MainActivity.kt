@@ -59,6 +59,7 @@ private const val MAX_LEGACY_FILE_BYTES = 256 * 1024
 private const val TOUCHPAD_SEND_INTERVAL_MS = 35L
 private const val TOUCHPAD_MOVE_SCALE = 1.25f
 private const val LIVE_PREVIEW_INTERVAL_MS = 600L
+private const val LIVE_PREVIEW_HD_1080_INTERVAL_MS = 200L
 private const val CLIPBOARD_POLL_INTERVAL_MS = 1500L
 private const val DEFAULT_NOTIFICATION_DISPLAY_LIMIT = 5
 private const val MIN_NOTIFICATION_DISPLAY_LIMIT = 5
@@ -87,6 +88,7 @@ private data class LivePreviewProfile(
     val quality: Int,
     val maxWidth: Int,
     val maxHeight: Int,
+    val intervalMs: Long,
 )
 
 private val LIVE_PREVIEW_PROFILE_ORIGINAL =
@@ -96,6 +98,7 @@ private val LIVE_PREVIEW_PROFILE_ORIGINAL =
         quality = 30,
         maxWidth = 0,
         maxHeight = 0,
+        intervalMs = LIVE_PREVIEW_INTERVAL_MS,
     )
 
 private val LIVE_PREVIEW_PROFILE_HD_1080 =
@@ -105,6 +108,7 @@ private val LIVE_PREVIEW_PROFILE_HD_1080 =
         quality = 34,
         maxWidth = 1920,
         maxHeight = 1080,
+        intervalMs = LIVE_PREVIEW_HD_1080_INTERVAL_MS,
     )
 
 private fun resolveLivePreviewProfile(modeId: String?): LivePreviewProfile =
@@ -1957,15 +1961,23 @@ class MainActivity : AppCompatActivity() {
             val memory = payload.optJSONObject("memory") ?: JSONObject()
             val drives = payload.optJSONArray("drives") ?: JSONArray()
             val networks = payload.optJSONArray("networkAddresses") ?: JSONArray()
+            val localIps = if (networks.length() == 0) "-" else (0 until networks.length()).joinToString { networks.optString(it) }
+            val externalIp = payload.optString("externalIpAddress", "").ifBlank { "-" }
+            val osName = payload.optString("osName", payload.optString("osDescription", "-"))
+            val osVersion = payload.optString("osVersion", "").ifBlank { payload.optString("osBuild", "") }
             binding.systemInfoText.text = buildString {
                 append("Makine: ${payload.optString("machineName", "-")}\n")
                 append("Kullanici: ${payload.optString("domainName", "")}\\${payload.optString("userName", "-")}\n")
-                append("OS: ${payload.optString("osDescription", "-")}\n")
+                append("OS: $osName\n")
+                if (osVersion.isNotBlank()) {
+                    append("OS surumu: $osVersion\n")
+                }
                 append("Islemci cekirdegi: ${payload.optInt("processorCount", 0)}\n")
                 append("RAM: ${formatFileSize(memory.optLong("usedBytes"))} / ${formatFileSize(memory.optLong("totalBytes"))}")
                 append(" (${memory.optInt("memoryLoadPercent", 0)}%)\n")
                 append("Surec sayisi: ${payload.optJSONObject("processes")?.optInt("total", 0) ?: 0}\n")
-                append("IP'ler: ${if (networks.length() == 0) "-" else (0 until networks.length()).joinToString { networks.optString(it) }}\n")
+                append("Yerel IP'ler: $localIps\n")
+                append("Dis IP: $externalIp\n")
                 append("Diskler:\n")
                 for (index in 0 until drives.length()) {
                     val drive = drives.optJSONObject(index) ?: continue
@@ -4442,7 +4454,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (isLivePreviewInFlight) {
-            mainHandler.postDelayed(livePreviewRunnable, LIVE_PREVIEW_INTERVAL_MS)
+            mainHandler.postDelayed(livePreviewRunnable, activeLivePreviewProfile.intervalMs)
             return
         }
 
@@ -4478,7 +4490,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 if (isLivePreviewRunning) {
-                    mainHandler.postDelayed(livePreviewRunnable, LIVE_PREVIEW_INTERVAL_MS)
+                    mainHandler.postDelayed(livePreviewRunnable, activeLivePreviewProfile.intervalMs)
                 }
             }
         }
@@ -5043,4 +5055,6 @@ class MainActivity : AppCompatActivity() {
         val payload: JSONObject,
     )
 }
+
+
 

@@ -12,8 +12,8 @@ android {
         applicationId = "com.uzaktanbildirim.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 62
-        versionName = "6.2"
+        versionCode = 63
+        versionName = "6.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -52,4 +52,5 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("com.google.firebase:firebase-messaging")
 }
+
 

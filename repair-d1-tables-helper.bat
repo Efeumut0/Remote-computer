@@ -25,7 +25,7 @@ echo.
 
 if not exist "%CONFIG_FILE%" (
     echo [ERROR] wrangler.jsonc was not found.
-    echo Run backend-kurulum-yardimcisi.bat first.
+    echo Run backend-setup-helper.bat first.
     pause
     exit /b 1
 )
@@ -151,7 +151,7 @@ if errorlevel 1 (
     echo.
     echo [WARNING] D1 repair finished, but the pair endpoint still looks broken.
     echo The backend may have been set up with an older package.
-    echo The safest fix is to rerun the latest backend-kurulum-yardimcisi.bat from the current package.
+    echo The safest fix is to rerun the latest backend-setup-helper.bat from the current package.
     goto :fail
 )
 
@@ -203,3 +203,4 @@ echo.
 pause
 popd
 exit /b 1
+
