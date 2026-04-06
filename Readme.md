@@ -169,3 +169,4 @@ Note: D1 is required for this setup. R2 is optional. If R2 is not enabled on the
 - If the agent shows `error code: 1101`, run `repair-d1-tables-helper.bat`. That helper repairs the Worker config, reapplies the migrations, and redeploys the Worker.
 - If notifications do not arrive, check the Firebase service account and Worker secret steps.
 
+Bug finder Bektaş Eren
