@@ -81,6 +81,14 @@ private const val WORKER_R2_STATE_SUPPORTED = 1
 private const val DEFAULT_SHORTCUT_ACCENT_ID = "violet"
 private const val LIVE_PREVIEW_MODE_ORIGINAL = "original"
 private const val LIVE_PREVIEW_MODE_HD_1080 = "hd_1080"
+private const val CAMERA_QUALITY_MODE_HD_720 = "hd_720"
+private const val CAMERA_QUALITY_MODE_HD_720_FAST = "hd_720_fast"
+private const val CAMERA_QUALITY_MODE_HD_1080 = "hd_1080"
+private const val CAMERA_LIVE_MODE_SESSION = "session"
+private const val CAMERA_LIVE_MODE_REOPEN = "reopen"
+private const val CAMERA_PREVIEW_INTERVAL_720_MS = 300L
+private const val CAMERA_PREVIEW_INTERVAL_720_FAST_MS = 100L
+private const val CAMERA_PREVIEW_INTERVAL_1080_MS = 600L
 
 private data class LivePreviewProfile(
     val modeId: String,
@@ -94,7 +102,7 @@ private data class LivePreviewProfile(
 private val LIVE_PREVIEW_PROFILE_ORIGINAL =
     LivePreviewProfile(
         modeId = LIVE_PREVIEW_MODE_ORIGINAL,
-        label = "Orijinal",
+        label = "Original",
         quality = 30,
         maxWidth = 0,
         maxHeight = 0,
@@ -115,6 +123,75 @@ private fun resolveLivePreviewProfile(modeId: String?): LivePreviewProfile =
     when (modeId?.trim()?.lowercase()) {
         LIVE_PREVIEW_MODE_HD_1080 -> LIVE_PREVIEW_PROFILE_HD_1080
         else -> LIVE_PREVIEW_PROFILE_ORIGINAL
+    }
+
+private data class CameraQualityProfile(
+    val modeId: String,
+    val label: String,
+    val jpegQuality: Int,
+    val maxWidth: Int,
+    val maxHeight: Int,
+    val intervalMs: Long,
+)
+
+private val CAMERA_QUALITY_PROFILE_HD_720 =
+    CameraQualityProfile(
+        modeId = CAMERA_QUALITY_MODE_HD_720,
+        label = "720p",
+        jpegQuality = 72,
+        maxWidth = 1280,
+        maxHeight = 720,
+        intervalMs = CAMERA_PREVIEW_INTERVAL_720_MS,
+    )
+
+private val CAMERA_QUALITY_PROFILE_HD_720_FAST =
+    CameraQualityProfile(
+        modeId = CAMERA_QUALITY_MODE_HD_720_FAST,
+        label = "720p fast",
+        jpegQuality = 62,
+        maxWidth = 1280,
+        maxHeight = 720,
+        intervalMs = CAMERA_PREVIEW_INTERVAL_720_FAST_MS,
+    )
+
+private val CAMERA_QUALITY_PROFILE_HD_1080 =
+    CameraQualityProfile(
+        modeId = CAMERA_QUALITY_MODE_HD_1080,
+        label = "1080p",
+        jpegQuality = 76,
+        maxWidth = 1920,
+        maxHeight = 1080,
+        intervalMs = CAMERA_PREVIEW_INTERVAL_1080_MS,
+    )
+
+private fun resolveCameraQualityProfile(modeId: String?): CameraQualityProfile =
+    when (modeId?.trim()?.lowercase()) {
+        CAMERA_QUALITY_MODE_HD_720_FAST -> CAMERA_QUALITY_PROFILE_HD_720_FAST
+        CAMERA_QUALITY_MODE_HD_1080 -> CAMERA_QUALITY_PROFILE_HD_1080
+        else -> CAMERA_QUALITY_PROFILE_HD_720
+    }
+
+private data class CameraLiveModeOption(
+    val modeId: String,
+    val label: String,
+)
+
+private val CAMERA_LIVE_MODE_OPTION_SESSION =
+    CameraLiveModeOption(
+        modeId = CAMERA_LIVE_MODE_SESSION,
+        label = "Live session",
+    )
+
+private val CAMERA_LIVE_MODE_OPTION_REOPEN =
+    CameraLiveModeOption(
+        modeId = CAMERA_LIVE_MODE_REOPEN,
+        label = "Frame by frame",
+    )
+
+private fun resolveCameraLiveModeOption(modeId: String?): CameraLiveModeOption =
+    when (modeId?.trim()?.lowercase()) {
+        CAMERA_LIVE_MODE_REOPEN -> CAMERA_LIVE_MODE_OPTION_REOPEN
+        else -> CAMERA_LIVE_MODE_OPTION_SESSION
     }
 
 class MainActivity : AppCompatActivity() {
@@ -139,6 +216,8 @@ class MainActivity : AppCompatActivity() {
     private var pendingDownloadFileName = "download.bin"
     private var lastScreenshotBytes: ByteArray? = null
     private var lastScreenshotFileName = "pc-screenshot.jpg"
+    private var lastCameraPreviewBytes: ByteArray? = null
+    private var lastCameraPreviewFileName = "pc-camera.jpg"
     private var isDragModeEnabled = false
     private var touchpadLastX = 0f
     private var touchpadLastY = 0f
@@ -152,6 +231,13 @@ class MainActivity : AppCompatActivity() {
     private var isLivePreviewRunning = false
     private var isLivePreviewInFlight = false
     private var activeLivePreviewProfile = LIVE_PREVIEW_PROFILE_ORIGINAL
+    private var isCameraPreviewRunning = false
+    private var isCameraPreviewInFlight = false
+    private var activeCameraQualityProfile = CAMERA_QUALITY_PROFILE_HD_720
+    private var activeCameraLiveModeOption = CAMERA_LIVE_MODE_OPTION_SESSION
+    private var activeCameraPreviewPcId: String? = null
+    private var availableCameraDevices: List<RemoteCameraDevice> = emptyList()
+    private var selectedCameraId = ""
     private var isActivityResumed = false
     private var suppressClipboardCallback = false
     private var suppressClipboardSwitchCallback = false
@@ -159,6 +245,10 @@ class MainActivity : AppCompatActivity() {
     private var unreadNotificationCount = 0
     private var currentSectionTabIndex = 0
     private var workerSupportsR2: Boolean? = null
+    private var suppressCameraSelectionCallback = false
+    private var suppressCameraQualityCallback = false
+    private var suppressCameraLiveModeCallback = false
+    private var suppressCameraMirrorCallback = false
     private var activeShortcutId: String? = null
     private var isShortcutReorderMode = false
     private var draggingShortcutId: String? = null
@@ -169,54 +259,54 @@ class MainActivity : AppCompatActivity() {
         ShortcutTypeOption(
             id = "application",
             label = "App / shortcut",
-            targetHint = "Ornek: chrome veya C:\\Program Files\\App\\app.exe",
+            targetHint = "Example: chrome or C:\\Program Files\\App\\app.exe",
             helperText = "Use this for EXE, LNK, BAT, CMD, COM, or shortcuts such as chrome / opera / spotify / discord.",
             supportsArguments = true,
             pickerMode = ShortcutPickerMode.APPLICATION,
         ),
         ShortcutTypeOption(
             id = "folder",
-            label = "Klasor",
-            targetHint = "Ornek: C:\\Users\\Efe\\Desktop",
-            helperText = "Tiklaninca secilen klasor Windows Gezgini ile acilir.",
+            label = "Folder",
+            targetHint = "Example: C:\\Users\\Efe\\Desktop",
+            helperText = "When tapped, the selected folder opens in Windows Explorer.",
             supportsArguments = false,
             pickerMode = ShortcutPickerMode.FOLDER,
         ),
         ShortcutTypeOption(
             id = "url",
             label = "Link / URL",
-            targetHint = "Ornek: https://example.com veya discord://",
-            helperText = "HTTP linkleri varsayilan tarayicida, ozel protokoller destekleyen uygulamada acilir.",
+            targetHint = "Example: https://example.com or discord://",
+            helperText = "HTTP links open in the default browser, and custom protocols open in the app that supports them.",
             supportsArguments = false,
             pickerMode = null,
         ),
         ShortcutTypeOption(
             id = "cmd",
-            label = "CMD komutu",
+            label = "CMD command",
             targetHint = "Example: ipconfig /all",
-            helperText = "Komut Istemi penceresi acar ve yazdigin komutu /K ile calistirir.",
+            helperText = "Opens Command Prompt and runs the command with /K.",
             supportsArguments = false,
             pickerMode = null,
         ),
         ShortcutTypeOption(
             id = "powershell",
-            label = "PowerShell komutu",
-            targetHint = "Ornek: Get-Process | Select-Object -First 10",
-            helperText = "PowerShell penceresi acar ve komutu -NoExit ile calistirir.",
+            label = "PowerShell command",
+            targetHint = "Example: Get-Process | Select-Object -First 10",
+            helperText = "Opens a PowerShell window and runs the command with -NoExit.",
             supportsArguments = false,
             pickerMode = null,
         ),
         ShortcutTypeOption(
             id = "run",
-            label = "Calistir komutu",
-            targetHint = "Ornek: shell:startup, control veya ms-settings:display",
+            label = "Run command",
+            targetHint = "Example: shell:startup, control, or ms-settings:display",
             helperText = "Use this for shell and system commands that can be entered into the Windows Run dialog.",
             supportsArguments = true,
             pickerMode = null,
         ),
         ShortcutTypeOption(
             id = "hotkey",
-            label = "Tus kombinasyonu",
+            label = "Key combination",
             targetHint = "",
             helperText = "Runs a single-stroke keyboard combination on the selected PC. Secure attention sequences such as Ctrl+Alt+Delete are not supported.",
             supportsArguments = false,
@@ -224,9 +314,9 @@ class MainActivity : AppCompatActivity() {
         ),
     )
     private val shortcutAccentOptions = listOf(
-        ShortcutAccentOption("violet", "Mor", R.color.shortcut_accent_violet_fill, R.color.shortcut_accent_violet_stroke),
+        ShortcutAccentOption("violet", "Purple", R.color.shortcut_accent_violet_fill, R.color.shortcut_accent_violet_stroke),
         ShortcutAccentOption("aqua", "Aqua", R.color.shortcut_accent_aqua_fill, R.color.shortcut_accent_aqua_stroke),
-        ShortcutAccentOption("emerald", "Zumrut", R.color.shortcut_accent_emerald_fill, R.color.shortcut_accent_emerald_stroke),
+        ShortcutAccentOption("emerald", "Emerald", R.color.shortcut_accent_emerald_fill, R.color.shortcut_accent_emerald_stroke),
         ShortcutAccentOption("coral", "Coral", R.color.shortcut_accent_coral_fill, R.color.shortcut_accent_coral_stroke),
         ShortcutAccentOption("amber", "Amber", R.color.shortcut_accent_amber_fill, R.color.shortcut_accent_amber_stroke),
         ShortcutAccentOption("slate", "Slate", R.color.shortcut_accent_slate_fill, R.color.shortcut_accent_slate_stroke),
@@ -300,6 +390,9 @@ class MainActivity : AppCompatActivity() {
     }
     private val hotkeyModifierIdSet = hotkeyModifierOptions.map { it.id }.toSet()
     private val hotkeyOptionMap = (hotkeyModifierOptions + hotkeyPrimaryOptions).associateBy { it.id }
+    private val cameraQualityOptions =
+        listOf(CAMERA_QUALITY_PROFILE_HD_720, CAMERA_QUALITY_PROFILE_HD_720_FAST, CAMERA_QUALITY_PROFILE_HD_1080)
+    private val cameraLiveModeOptions = listOf(CAMERA_LIVE_MODE_OPTION_SESSION, CAMERA_LIVE_MODE_OPTION_REOPEN)
 
     private val clipboardChangedListener = ClipboardManager.OnPrimaryClipChangedListener {
         if (suppressClipboardCallback || enabledClipboardSyncPcIds().isEmpty()) {
@@ -310,6 +403,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val livePreviewRunnable = Runnable { pollLivePreview() }
+    private val cameraPreviewRunnable = Runnable { pollCameraPreview() }
     private val localizationSweepRunnable = object : Runnable {
         override fun run() {
             if (!BuildConfig.FORCE_ENGLISH || !isActivityResumed) {
@@ -399,12 +493,16 @@ class MainActivity : AppCompatActivity() {
         binding.unpairButton.isEnabled = store.pairedPcId.isNotBlank()
         binding.notificationSettingsText.text = "Manage your notification preferences here."
         binding.clipboardSyncStatusText.text = "Select a PC first to use clipboard sync."
+        binding.cameraStatusText.text = "Select a PC first for the camera."
         binding.livePreviewStatusText.text = "Select a PC first for live screen preview."
 
         updateSelectedRemoteFile(null)
         updateSelectedProcess(null)
+        updateCameraPreview()
         updateScreenshotActions()
         updateDragButton()
+        setupCameraControls()
+        updateCameraControls()
         updateLivePreviewButtons()
         renderUsageSummaryPlaceholder()
         renderPcSummary(emptyList())
@@ -455,6 +553,9 @@ class MainActivity : AppCompatActivity() {
         if (store.getLivePreviewEnabled(selectedPcIdOrNull()) && !isLivePreviewRunning) {
             startLivePreview(persistPreference = false)
         }
+        if (store.getCameraPreviewEnabled(selectedPcIdOrNull()) && !isCameraPreviewRunning) {
+            startCameraPreview(persistPreference = false)
+        }
         if (BuildConfig.FORCE_ENGLISH) {
             mainHandler.removeCallbacks(localizationSweepRunnable)
             mainHandler.post(localizationSweepRunnable)
@@ -465,12 +566,14 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         isActivityResumed = false
         pauseClipboardForegroundMonitoring()
+        stopCameraPreview(updateStoredPreference = false)
         mainHandler.removeCallbacks(localizationSweepRunnable)
         super.onPause()
     }
 
     override fun onDestroy() {
         stopLivePreview(updateStoredPreference = false)
+        stopCameraPreview(updateStoredPreference = false)
         stopClipboardSync()
         mainHandler.removeCallbacks(localizationSweepRunnable)
         executor.shutdownNow()
@@ -484,9 +587,12 @@ class MainActivity : AppCompatActivity() {
             selectedTabIndex = binding.mainTabLayout.selectedTabPosition.coerceAtLeast(0),
             screenshotBytes = lastScreenshotBytes,
             screenshotFileName = lastScreenshotFileName,
+            cameraPreviewBytes = lastCameraPreviewBytes,
+            cameraPreviewFileName = lastCameraPreviewFileName,
             notifications = lastRenderedNotifications,
             unreadNotificationCount = unreadNotificationCount,
             availablePcs = availablePcs,
+            availableCameraDevices = availableCameraDevices,
             statusText = binding.statusText.text?.toString().orEmpty(),
             resultText = binding.resultText.text?.toString().orEmpty(),
             logText = binding.logText.text?.toString().orEmpty(),
@@ -541,6 +647,21 @@ class MainActivity : AppCompatActivity() {
                     R.id.customAppPathInput,
                     R.id.customAppArgumentsInput,
                     R.id.launchCustomAppButton,
+                    R.id.cameraHeading,
+                    R.id.cameraHintText,
+                    R.id.cameraSelectionHeading,
+                    R.id.cameraSpinner,
+                    R.id.refreshCameraListButton,
+                    R.id.cameraQualityHeading,
+                    R.id.cameraQualitySpinner,
+                    R.id.cameraLiveModeHeading,
+                    R.id.cameraLiveModeSpinner,
+                    R.id.cameraMirrorSwitch,
+                    R.id.cameraSnapshotButton,
+                    R.id.startCameraPreviewButton,
+                    R.id.stopCameraPreviewButton,
+                    R.id.cameraStatusText,
+                    R.id.cameraPreviewImage,
                     R.id.screenshotHeading,
                     R.id.screenshotButton,
                     R.id.saveScreenshotButton,
@@ -741,15 +862,25 @@ class MainActivity : AppCompatActivity() {
 
         stopClipboardSync()
         stopLivePreview(updateStoredPreference = false)
+        stopCameraPreview(updateStoredPreference = false)
 
         val clipboardEnabled = scopedPcId != null && store.getClipboardSyncEnabled(scopedPcId)
         val livePreviewEnabled = scopedPcId != null && store.getLivePreviewEnabled(scopedPcId)
+        val cameraPreviewEnabled = scopedPcId != null && store.getCameraPreviewEnabled(scopedPcId)
         activeLivePreviewProfile =
             scopedPcId?.let { resolveLivePreviewProfile(store.getLivePreviewMode(it)) }
                 ?: LIVE_PREVIEW_PROFILE_ORIGINAL
+        activeCameraQualityProfile =
+            scopedPcId?.let { resolveCameraQualityProfile(store.getCameraQualityMode(it)) }
+                ?: CAMERA_QUALITY_PROFILE_HD_720
+        activeCameraLiveModeOption =
+            scopedPcId?.let { resolveCameraLiveModeOption(store.getCameraLiveMode(it)) }
+                ?: CAMERA_LIVE_MODE_OPTION_SESSION
+        selectedCameraId = scopedPcId?.let { store.getSelectedCameraId(it) }.orEmpty()
         currentRemotePath = scopedPcId?.let { store.getRemotePath(it) }.orEmpty()
         currentRemoteParentPath = null
         binding.filesPathInput.setText(currentRemotePath)
+        setCameraMirrorSwitchChecked(scopedPcId != null && store.getCameraMirrorEnabled(scopedPcId))
 
         setClipboardSyncSwitchChecked(clipboardEnabled)
         binding.clipboardSyncStatusText.text = when {
@@ -762,12 +893,20 @@ class MainActivity : AppCompatActivity() {
             livePreviewEnabled -> "Live screen preview is ready for $selectedPcName (${activeLivePreviewProfile.label})."
             else -> "Live screen preview is off for $selectedPcName."
         }
+        binding.cameraStatusText.text = when {
+            scopedPcId == null -> t("Kamera icin once bir PC sec.")
+            cameraPreviewEnabled -> t("$selectedPcName icin kamera canli izleme hazir (${activeCameraQualityProfile.label}, ${activeCameraLiveModeOption.label}).")
+            else -> t("$selectedPcName icin kamera hazir. Bir kamera secip tek kare veya canli izleme baslat.")
+        }
 
         shortcutItems.clear()
         activeShortcutId = null
         clearShortcutDragState(refreshGrid = false)
         shortcutItems += readStoredShortcutItems(scopedPcId)
         renderShortcutGrid()
+        updateCameraSelectionViews()
+        updateCameraPreview()
+        updateCameraControls()
         updateLivePreviewButtons()
 
         if (enabledClipboardSyncPcIds().isNotEmpty()) {
@@ -775,6 +914,15 @@ class MainActivity : AppCompatActivity() {
         }
         if (restoreLivePreview && livePreviewEnabled) {
             startLivePreview(activeLivePreviewProfile, persistPreference = false)
+        }
+        if (scopedPcId != null) {
+            refreshCameraList(showFeedback = false)
+        } else {
+            availableCameraDevices = emptyList()
+            updateCameraSelectionViews()
+        }
+        if (restoreLivePreview && cameraPreviewEnabled) {
+            startCameraPreview(persistPreference = false)
         }
     }
 
@@ -786,7 +934,10 @@ class MainActivity : AppCompatActivity() {
         currentSectionTabIndex = state.selectedTabIndex
         lastScreenshotBytes = state.screenshotBytes
         lastScreenshotFileName = state.screenshotFileName
+        lastCameraPreviewBytes = state.cameraPreviewBytes
+        lastCameraPreviewFileName = state.cameraPreviewFileName
         availablePcs = state.availablePcs
+        availableCameraDevices = state.availableCameraDevices
         if (state.availablePcs.isNotEmpty()) {
             renderPcSummary(state.availablePcs)
         }
@@ -799,6 +950,8 @@ class MainActivity : AppCompatActivity() {
         if (state.logText.isNotBlank()) {
             binding.logText.text = state.logText
         }
+        updateCameraSelectionViews()
+        updateCameraPreview()
         renderCurrentScreenshotPreview()
         if (state.notifications.isNotEmpty() || state.unreadNotificationCount > 0) {
             renderNotificationCenter(state.notifications, state.unreadNotificationCount)
@@ -1118,6 +1271,76 @@ class MainActivity : AppCompatActivity() {
             text.contains("objectkey") ||
             text == "not found" ||
             text.contains("\"error\":\"not found\"")
+    }
+
+    private fun setupCameraControls() {
+        binding.cameraQualitySpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            cameraQualityOptions.map { it.label },
+        )
+        binding.cameraLiveModeSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            cameraLiveModeOptions.map { it.label },
+        )
+
+        binding.cameraSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (suppressCameraSelectionCallback || availableCameraDevices.isEmpty()) {
+                    return
+                }
+
+                val device = availableCameraDevices.getOrNull(position) ?: return
+                selectedCameraId = device.id
+                selectedPcIdOrNull()?.let { scopedPcId -> store.setSelectedCameraId(scopedPcId, device.id) }
+                updateCameraControls()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+
+        binding.cameraQualitySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (suppressCameraQualityCallback) {
+                    return
+                }
+
+                activeCameraQualityProfile = cameraQualityOptions.getOrElse(position) { CAMERA_QUALITY_PROFILE_HD_720 }
+                selectedPcIdOrNull()?.let { scopedPcId -> store.setCameraQualityMode(scopedPcId, activeCameraQualityProfile.modeId) }
+                updateCameraControls()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+
+        binding.cameraLiveModeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (suppressCameraLiveModeCallback) {
+                    return
+                }
+
+                activeCameraLiveModeOption = cameraLiveModeOptions.getOrElse(position) { CAMERA_LIVE_MODE_OPTION_SESSION }
+                selectedPcIdOrNull()?.let { scopedPcId -> store.setCameraLiveMode(scopedPcId, activeCameraLiveModeOption.modeId) }
+                updateCameraControls()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+
+        binding.cameraMirrorSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressCameraMirrorCallback) {
+                return@setOnCheckedChangeListener
+            }
+
+            selectedPcIdOrNull()?.let { scopedPcId -> store.setCameraMirrorEnabled(scopedPcId, isChecked) }
+            updateCameraPreview()
+        }
+
+        binding.refreshCameraListButton.setOnClickListener { refreshCameraList(showFeedback = true) }
+        binding.cameraSnapshotButton.setOnClickListener { requestCameraSnapshot() }
+        binding.startCameraPreviewButton.setOnClickListener { startCameraPreview() }
+        binding.stopCameraPreviewButton.setOnClickListener { stopCameraPreview() }
     }
 
     private fun setupButtons() {
@@ -4384,6 +4607,340 @@ class MainActivity : AppCompatActivity() {
         binding.stopLivePreviewButton.isEnabled = isLivePreviewRunning
     }
 
+    private fun setCameraMirrorSwitchChecked(isChecked: Boolean) {
+        suppressCameraMirrorCallback = true
+        binding.cameraMirrorSwitch.isChecked = isChecked
+        suppressCameraMirrorCallback = false
+    }
+
+    private fun updateCameraSelectionViews() {
+        val cameraNames = if (availableCameraDevices.isEmpty()) {
+            listOf("No camera found")
+        } else {
+            availableCameraDevices.map { it.name }
+        }
+        binding.cameraSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            cameraNames,
+        )
+
+        suppressCameraSelectionCallback = true
+        if (availableCameraDevices.isEmpty()) {
+            binding.cameraSpinner.setSelection(0, false)
+            selectedCameraId = ""
+        } else {
+            val resolvedCameraId = selectedCameraId.takeIf { currentId -> availableCameraDevices.any { it.id == currentId } }
+                ?: availableCameraDevices.first().id
+            selectedCameraId = resolvedCameraId
+            val selectedIndex = availableCameraDevices.indexOfFirst { it.id == resolvedCameraId }.coerceAtLeast(0)
+            binding.cameraSpinner.setSelection(selectedIndex, false)
+            selectedPcIdOrNull()?.let { scopedPcId -> store.setSelectedCameraId(scopedPcId, resolvedCameraId) }
+        }
+        suppressCameraSelectionCallback = false
+
+        suppressCameraQualityCallback = true
+        binding.cameraQualitySpinner.setSelection(cameraQualityOptions.indexOfFirst { it.modeId == activeCameraQualityProfile.modeId }.coerceAtLeast(0), false)
+        suppressCameraQualityCallback = false
+
+        suppressCameraLiveModeCallback = true
+        binding.cameraLiveModeSpinner.setSelection(cameraLiveModeOptions.indexOfFirst { it.modeId == activeCameraLiveModeOption.modeId }.coerceAtLeast(0), false)
+        suppressCameraLiveModeCallback = false
+    }
+
+    private fun updateCameraControls() {
+        val hasPc = selectedPcIdOrNull() != null
+        val hasCamera = availableCameraDevices.isNotEmpty() && selectedCameraId.isNotBlank()
+        binding.cameraSpinner.isEnabled = hasPc && !isCameraPreviewRunning && availableCameraDevices.isNotEmpty()
+        binding.refreshCameraListButton.isEnabled = hasPc && !isCameraPreviewRunning
+        binding.cameraQualitySpinner.isEnabled = hasPc && !isCameraPreviewRunning
+        binding.cameraLiveModeSpinner.isEnabled = hasPc && !isCameraPreviewRunning
+        binding.cameraMirrorSwitch.isEnabled = hasPc
+        binding.cameraSnapshotButton.isEnabled = hasPc && hasCamera && !isCameraPreviewRunning
+        binding.startCameraPreviewButton.isEnabled = hasPc && hasCamera && !isCameraPreviewRunning
+        binding.stopCameraPreviewButton.isEnabled = isCameraPreviewRunning
+    }
+
+    private fun updateCameraPreview() {
+        val bytes = lastCameraPreviewBytes
+        if (bytes == null) {
+            binding.cameraPreviewImage.setImageDrawable(null)
+            binding.cameraPreviewImage.scaleX = 1f
+            updateCameraControls()
+            return
+        }
+
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        if (bitmap == null) {
+            binding.cameraPreviewImage.setImageDrawable(null)
+            lastCameraPreviewBytes = null
+            binding.cameraPreviewImage.scaleX = 1f
+        } else {
+            binding.cameraPreviewImage.setImageBitmap(bitmap)
+            binding.cameraPreviewImage.scaleX = if (binding.cameraMirrorSwitch.isChecked) -1f else 1f
+        }
+        updateCameraControls()
+    }
+
+    private fun refreshCameraList(showFeedback: Boolean) {
+        val scopedPcId = selectedPcIdOrNull()
+        if (store.workerUrl.isBlank() || store.ownerToken.isBlank() || scopedPcId == null) {
+            binding.cameraStatusText.text = t("Kamera icin once bir PC sec.")
+            availableCameraDevices = emptyList()
+            selectedCameraId = ""
+            updateCameraSelectionViews()
+            updateCameraControls()
+            if (showFeedback) {
+                showToast("Kamera listesi icin once bir PC sec.")
+            }
+            return
+        }
+
+        binding.cameraStatusText.text = t("Kamera listesi aliniyor...")
+        updateCameraControls()
+        runInBackground {
+            val command = api.sendCommandAndAwaitResult(
+                workerUrl = store.workerUrl,
+                ownerToken = store.ownerToken,
+                pcId = scopedPcId,
+                type = "camera-list",
+                timeoutMs = 18_000,
+                pollIntervalMs = 250,
+            )
+            val result = parseCommandResult(command)
+
+            runOnUiThread {
+                if (result.success) {
+                    availableCameraDevices = result.payload.optJSONArray("cameras")
+                        ?.let { camerasJson ->
+                            buildList {
+                                for (index in 0 until camerasJson.length()) {
+                                    val item = camerasJson.optJSONObject(index) ?: continue
+                                    add(
+                                        RemoteCameraDevice(
+                                            id = item.optString("id"),
+                                            name = item.optString("name").ifBlank { "Camera ${index + 1}" },
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                        .orEmpty()
+                    updateCameraSelectionViews()
+                    binding.cameraStatusText.text = if (availableCameraDevices.isEmpty()) {
+                        t("Bu PC'de kullanilabilir kamera bulunamadi.")
+                    } else {
+                        t("Kamera listesi hazir. ${availableCameraDevices.size} kamera bulundu.")
+                    }
+                    if (showFeedback) {
+                        appendLog(binding.cameraStatusText.text.toString())
+                    }
+                } else {
+                    availableCameraDevices = emptyList()
+                    selectedCameraId = ""
+                    updateCameraSelectionViews()
+                    binding.cameraStatusText.text = t(friendlyErrorMessage(result.error, "Kamera listesi alinamadi."))
+                }
+                updateCameraControls()
+            }
+        }
+    }
+
+    private fun requestCameraSnapshot() {
+        val scopedPcId = selectedPcIdOrNull()
+        if (store.workerUrl.isBlank() || store.ownerToken.isBlank() || scopedPcId == null) {
+            showToast("Tek kare icin once bir PC sec.")
+            return
+        }
+        if (selectedCameraId.isBlank()) {
+            showToast("Once listeden bir kamera sec.")
+            return
+        }
+
+        binding.cameraStatusText.text = t("Kameradan tek kare aliniyor...")
+        updateCameraControls()
+        runInBackground {
+            val command = api.sendCommandAndAwaitResult(
+                workerUrl = store.workerUrl,
+                ownerToken = store.ownerToken,
+                pcId = scopedPcId,
+                type = "camera-snapshot",
+                payload = buildCameraPayload(),
+                timeoutMs = 20_000,
+                pollIntervalMs = 250,
+            )
+            val result = parseCommandResult(command)
+
+            runOnUiThread {
+                if (result.success) {
+                    applyCameraPreviewResult(
+                        payload = result.payload,
+                        activeLabel = "Tek kare hazir",
+                        filePrefix = "pc-camera",
+                    )
+                } else {
+                    binding.cameraStatusText.text = t(friendlyErrorMessage(result.error, "Kamera tek kare hatasi."))
+                }
+                updateCameraControls()
+            }
+        }
+    }
+
+    private fun startCameraPreview(persistPreference: Boolean = true) {
+        val scopedPcId = selectedPcIdOrNull()
+        if (store.workerUrl.isBlank() || store.ownerToken.isBlank() || scopedPcId == null) {
+            showToast("Canli kamera icin once bir PC sec.")
+            return
+        }
+        if (selectedCameraId.isBlank()) {
+            showToast("Once listeden bir kamera sec.")
+            return
+        }
+
+        if (persistPreference) {
+            store.setCameraPreviewEnabled(scopedPcId, true)
+            store.setCameraQualityMode(scopedPcId, activeCameraQualityProfile.modeId)
+            store.setCameraLiveMode(scopedPcId, activeCameraLiveModeOption.modeId)
+            store.setSelectedCameraId(scopedPcId, selectedCameraId)
+        }
+
+        isCameraPreviewRunning = true
+        isCameraPreviewInFlight = false
+        activeCameraPreviewPcId = scopedPcId
+        binding.cameraStatusText.text = t("Kamera canli izleme baslatiliyor (${activeCameraQualityProfile.label}, ${activeCameraLiveModeOption.label}).")
+        updateCameraControls()
+        runInBackground {
+            val command = api.sendCommandAndAwaitResult(
+                workerUrl = store.workerUrl,
+                ownerToken = store.ownerToken,
+                pcId = scopedPcId,
+                type = "camera-live-start",
+                payload = buildCameraPayload(),
+                timeoutMs = 20_000,
+                pollIntervalMs = 250,
+            )
+            val result = parseCommandResult(command)
+
+            runOnUiThread {
+                if (result.success) {
+                    binding.cameraStatusText.text = t(
+                        "Kamera canli izleme acik • ${result.payload.optString("cameraName", resolveSelectedCameraName())} • ${activeCameraQualityProfile.label} • ${activeCameraLiveModeOption.label}",
+                    )
+                    mainHandler.removeCallbacks(cameraPreviewRunnable)
+                    mainHandler.post(cameraPreviewRunnable)
+                } else {
+                    isCameraPreviewRunning = false
+                    isCameraPreviewInFlight = false
+                    activeCameraPreviewPcId = null
+                    if (persistPreference && scopedPcId == selectedPcIdOrNull()) {
+                        store.setCameraPreviewEnabled(scopedPcId, false)
+                    }
+                    binding.cameraStatusText.text = t(friendlyErrorMessage(result.error, "Kamera canli izleme baslatilamadi."))
+                    updateCameraControls()
+                }
+            }
+        }
+    }
+
+    private fun pollCameraPreview() {
+        if (!isCameraPreviewRunning || store.workerUrl.isBlank() || store.ownerToken.isBlank() || activeCameraPreviewPcId.isNullOrBlank()) {
+            return
+        }
+
+        if (isCameraPreviewInFlight) {
+            mainHandler.postDelayed(cameraPreviewRunnable, activeCameraQualityProfile.intervalMs)
+            return
+        }
+
+        isCameraPreviewInFlight = true
+        runInBackground {
+            val command = api.sendCommandAndAwaitResult(
+                workerUrl = store.workerUrl,
+                ownerToken = store.ownerToken,
+                pcId = activeCameraPreviewPcId.orEmpty(),
+                type = "camera-live-frame",
+                payload = buildCameraPayload(),
+                timeoutMs = 20_000,
+                pollIntervalMs = 250,
+            )
+            val result = parseCommandResult(command)
+
+            runOnUiThread {
+                isCameraPreviewInFlight = false
+                if (result.success) {
+                    applyCameraPreviewResult(
+                        payload = result.payload,
+                        activeLabel = "Kamera canli izleme hazir",
+                        filePrefix = "pc-camera-live",
+                    )
+                } else {
+                    binding.cameraStatusText.text = t(friendlyErrorMessage(result.error, "Kamera canli izleme hatasi."))
+                }
+
+                if (isCameraPreviewRunning) {
+                    mainHandler.postDelayed(cameraPreviewRunnable, activeCameraQualityProfile.intervalMs)
+                }
+            }
+        }
+    }
+
+    private fun stopCameraPreview(updateStoredPreference: Boolean = true, requestRemoteStop: Boolean = true) {
+        val livePcId = activeCameraPreviewPcId
+        val currentPcId = selectedPcIdOrNull()
+        if (updateStoredPreference && currentPcId != null) {
+            store.setCameraPreviewEnabled(currentPcId, false)
+        }
+
+        isCameraPreviewRunning = false
+        isCameraPreviewInFlight = false
+        activeCameraPreviewPcId = null
+        mainHandler.removeCallbacks(cameraPreviewRunnable)
+        binding.cameraStatusText.text = t("Kamera kapali.")
+        updateCameraControls()
+
+        if (requestRemoteStop && livePcId != null && store.workerUrl.isNotBlank() && store.ownerToken.isNotBlank()) {
+            runInBackground {
+                runCatching {
+                    api.sendCommand(
+                        workerUrl = store.workerUrl,
+                        ownerToken = store.ownerToken,
+                        pcId = livePcId,
+                        type = "camera-live-stop",
+                    )
+                }
+            }
+        }
+    }
+
+    private fun buildCameraPayload(): JSONObject {
+        return JSONObject()
+            .put("cameraId", selectedCameraId)
+            .put("maxWidth", activeCameraQualityProfile.maxWidth)
+            .put("maxHeight", activeCameraQualityProfile.maxHeight)
+            .put("quality", activeCameraQualityProfile.jpegQuality)
+            .put("liveMode", activeCameraLiveModeOption.modeId)
+    }
+
+    private fun applyCameraPreviewResult(payload: JSONObject, activeLabel: String, filePrefix: String) {
+        val base64Image = payload.optString("imageBase64", "")
+        if (base64Image.isBlank()) {
+            binding.cameraStatusText.text = t("Kamera karesi alinamadi.")
+            return
+        }
+
+        lastCameraPreviewBytes = Base64.decode(base64Image, Base64.DEFAULT)
+        lastCameraPreviewFileName = "$filePrefix-${System.currentTimeMillis()}.jpg"
+        updateCameraPreview()
+        val cameraName = payload.optString("cameraName", resolveSelectedCameraName())
+        binding.cameraStatusText.text = t(
+            "$activeLabel • $cameraName • ${payload.optInt("width")} x ${payload.optInt("height")} • ${activeCameraQualityProfile.label}${if (binding.cameraMirrorSwitch.isChecked) " • Ayna" else ""}",
+        )
+    }
+
+    private fun resolveSelectedCameraName(): String {
+        return availableCameraDevices.firstOrNull { it.id == selectedCameraId }?.name ?: "Selected camera"
+    }
+
     private fun renderUsageSummaryPlaceholder() {
         binding.usageSummaryText.text =
             "Yaklasik limit bilgisi eslesme sonrasi gorunur. Not: request sayisi tahminidir; R2 icin sabit gunluk veri limiti yoktur."
@@ -4821,8 +5378,14 @@ class MainActivity : AppCompatActivity() {
         renderTransferIdleState()
         renderFilePreviewPlaceholder()
         stopLivePreview(updateStoredPreference = false)
+        stopCameraPreview(updateStoredPreference = false)
         stopClipboardSync()
         setClipboardSyncSwitchChecked(false)
+        availableCameraDevices = emptyList()
+        selectedCameraId = ""
+        lastCameraPreviewBytes = null
+        updateCameraSelectionViews()
+        updateCameraPreview()
         shortcutItems.clear()
         activeShortcutId = null
         clearShortcutDragState(refreshGrid = false)
@@ -4951,6 +5514,18 @@ class MainActivity : AppCompatActivity() {
                 || lower.contains("zaman asimina ugradi") ->
                 t("The request timed out. Check the connection and Worker status, then try again.")
 
+            lower.contains("camera is in use")
+                || lower.contains("device in use")
+                || lower.contains("0xa00f4243")
+                || lower.contains("kamera kullanimda")
+                || lower.contains("kamera baska bir uygulama tarafindan kullaniliyor") ->
+                t("Kamera baska bir uygulama tarafindan kullaniliyor olabilir.")
+
+            lower.contains("camera access was denied")
+                || lower.contains("access denied")
+                || lower.contains("kamera erisimi reddedildi") ->
+                t("Kameraya erisim reddedildi. Windows gizlilik ayarlarini kontrol et.")
+
             normalized.startsWith("{") || normalized.startsWith("[") -> t(fallback)
             else -> t(normalized)
         }
@@ -5025,13 +5600,21 @@ class MainActivity : AppCompatActivity() {
         val platform: String,
     )
 
+    private data class RemoteCameraDevice(
+        val id: String,
+        val name: String,
+    )
+
     private data class RetainedUiState(
         val selectedTabIndex: Int,
         val screenshotBytes: ByteArray?,
         val screenshotFileName: String,
+        val cameraPreviewBytes: ByteArray?,
+        val cameraPreviewFileName: String,
         val notifications: List<RemoteNotificationItem>,
         val unreadNotificationCount: Int,
         val availablePcs: List<RemotePcSummary>,
+        val availableCameraDevices: List<RemoteCameraDevice>,
         val statusText: String,
         val resultText: String,
         val logText: String,

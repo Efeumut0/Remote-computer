@@ -112,6 +112,51 @@ class DeviceStore(context: Context) {
         preferences.edit().putString(pcScopedKey("live_preview_mode", pcId), value.trim()).apply()
     }
 
+    fun getCameraPreviewEnabled(pcId: String?): Boolean {
+        migrateLegacyPcScopedStateIfNeeded(pcId)
+        return preferences.getBoolean(pcScopedKey("camera_preview_enabled", pcId), false)
+    }
+
+    fun setCameraPreviewEnabled(pcId: String?, value: Boolean) {
+        preferences.edit().putBoolean(pcScopedKey("camera_preview_enabled", pcId), value).apply()
+    }
+
+    fun getCameraQualityMode(pcId: String?): String {
+        migrateLegacyPcScopedStateIfNeeded(pcId)
+        return preferences.getString(pcScopedKey("camera_quality_mode", pcId), "hd_720") ?: "hd_720"
+    }
+
+    fun setCameraQualityMode(pcId: String?, value: String) {
+        preferences.edit().putString(pcScopedKey("camera_quality_mode", pcId), value.trim()).apply()
+    }
+
+    fun getCameraLiveMode(pcId: String?): String {
+        migrateLegacyPcScopedStateIfNeeded(pcId)
+        return preferences.getString(pcScopedKey("camera_live_mode", pcId), "session") ?: "session"
+    }
+
+    fun setCameraLiveMode(pcId: String?, value: String) {
+        preferences.edit().putString(pcScopedKey("camera_live_mode", pcId), value.trim()).apply()
+    }
+
+    fun getSelectedCameraId(pcId: String?): String {
+        migrateLegacyPcScopedStateIfNeeded(pcId)
+        return preferences.getString(pcScopedKey("selected_camera_id", pcId), "") ?: ""
+    }
+
+    fun setSelectedCameraId(pcId: String?, value: String) {
+        preferences.edit().putString(pcScopedKey("selected_camera_id", pcId), value.trim()).apply()
+    }
+
+    fun getCameraMirrorEnabled(pcId: String?): Boolean {
+        migrateLegacyPcScopedStateIfNeeded(pcId)
+        return preferences.getBoolean(pcScopedKey("camera_mirror_enabled", pcId), false)
+    }
+
+    fun setCameraMirrorEnabled(pcId: String?, value: Boolean) {
+        preferences.edit().putBoolean(pcScopedKey("camera_mirror_enabled", pcId), value).apply()
+    }
+
     var backgroundPermissionGranted: Boolean
         get() = preferences.getBoolean("background_permission_granted", false)
         set(value) = preferences.edit().putBoolean("background_permission_granted", value).apply()
