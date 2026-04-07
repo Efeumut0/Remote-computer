@@ -12,8 +12,8 @@ android {
         applicationId = "com.uzaktanbildirim.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 69
-        versionName = "6.9"
+        versionCode = 70
+        versionName = "7.0"
 
         buildConfigField("boolean", "FORCE_ENGLISH", "true")
 
