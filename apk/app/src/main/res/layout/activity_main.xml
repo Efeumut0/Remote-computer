@@ -273,6 +273,13 @@
                 android:text="Open extra settings" />
         </LinearLayout>
 
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/backgroundClipboardMonitoringSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Background clipboard monitoring (Experimental)" />
+
         <TextView
             android:id="@+id/cleanInstallHintText"
             android:layout_width="match_parent"
@@ -810,12 +817,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Enable clipboard sync" />
-
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/backgroundClipboardMonitoringSwitch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Try background clipboard monitoring" />
 
         <TextView
             android:id="@+id/clipboardSyncStatusText"

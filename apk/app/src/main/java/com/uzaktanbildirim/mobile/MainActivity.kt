@@ -782,6 +782,7 @@ class MainActivity : AppCompatActivity() {
                     R.id.backgroundPermissionHeading,
                     R.id.backgroundPermissionStatusText,
                     R.id.backgroundPermissionActions,
+                    R.id.backgroundClipboardMonitoringSwitch,
                     R.id.cleanInstallHintText,
                     R.id.pairingCodeInput,
                     R.id.pairButton,
