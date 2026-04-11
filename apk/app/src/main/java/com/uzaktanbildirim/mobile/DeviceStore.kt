@@ -165,6 +165,10 @@ class DeviceStore(context: Context) {
         get() = preferences.getLong("background_permission_last_checked_at", 0L)
         set(value) = preferences.edit().putLong("background_permission_last_checked_at", value).apply()
 
+    var backgroundClipboardMonitoringEnabled: Boolean
+        get() = preferences.getBoolean("background_clipboard_monitoring_enabled", true)
+        set(value) = preferences.edit().putBoolean("background_clipboard_monitoring_enabled", value).apply()
+
     var lastLocalClipboardSignature: String
         get() = preferences.getString("last_local_clipboard_signature", "") ?: ""
         set(value) = preferences.edit().putString("last_local_clipboard_signature", value).apply()

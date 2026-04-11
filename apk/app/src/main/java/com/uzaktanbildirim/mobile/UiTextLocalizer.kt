@@ -167,6 +167,8 @@ object UiTextLocalizer {
         "Canli oturum" to "Live session",
         "Kare kare ac" to "Frame by frame",
         "Ayna" to "Mirror",
+        "Drag modu acik" to "Drag mode on",
+        "Drag modu kapali" to "Drag mode off",
         "Calistir" to "Run",
         "Duzenle" to "Edit",
         "Modifier tuslari" to "Modifier keys",
@@ -185,6 +187,14 @@ object UiTextLocalizer {
         "Bu kombinasyon desteklenmez" to "This combination is not supported",
         "Secili kombinasyon" to "Selected combination",
         "Bir kombinasyon sec. Ornek: Left Ctrl + Right Alt + Q" to "Select a combination. Example: Left Ctrl + Right Alt + Q",
+        "Custom uygulama" to "Custom app",
+        "Clipboard gonder" to "Send clipboard",
+        "Clipboard oku" to "Read clipboard",
+        "Clipboard temizle" to "Clear clipboard",
+        "Secili dosyayi calistir" to "Run selected file",
+        "Kisayol surukleme baslatilamadi." to "Shortcut dragging could not be started.",
+        "Kisayol listenin sonuna tasindi." to "The shortcut was moved to the end of the list.",
+        "Kisayol kaydedildi ama ikon bilgisi alinamadi:" to "The shortcut was saved but the icon information could not be retrieved:",
         "Bu Worker icin legacy dosya aktarim moduna gecildi." to "Legacy file transfer mode was enabled for this Worker.",
         "Ekran goruntusu" to "Screen capture",
         "Dosya onizleme" to "File preview",
@@ -318,7 +328,15 @@ object UiTextLocalizer {
         "Kapat" to "Close",
         "Iptal" to "Cancel",
         "Evet" to "Yes",
-        "Hayir" to "No"
+        "Hayir" to "No",
+        "Kaldirilacak eslesme bulunamadi." to "No pairing was found to remove.",
+        "Once kamera goruntusu al." to "Capture a camera frame first.",
+        "Kamera goruntusu acilamadi." to "The camera image could not be opened.",
+        "Yaklasik limit bilgisi eslesme sonrasi gorunur. Not: request sayisi tahminidir; R2 icin sabit gunluk veri limiti yoktur." to "Estimated limit information appears after pairing. Note: the request count is approximate; there is no fixed daily data limit for R2.",
+        "Siralama acik" to "Reordering on",
+        "Yeniden adlandir" to "Rename",
+        "Oge sil" to "Delete item",
+        "Toplu silme" to "Bulk delete"
     )
 
     private val regexRules = listOf(

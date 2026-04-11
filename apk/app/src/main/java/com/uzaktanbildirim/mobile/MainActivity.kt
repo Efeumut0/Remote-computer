@@ -1,6 +1,7 @@
 package com.uzaktanbildirim.mobile
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -60,7 +61,9 @@ private const val TOUCHPAD_SEND_INTERVAL_MS = 35L
 private const val TOUCHPAD_MOVE_SCALE = 1.25f
 private const val LIVE_PREVIEW_INTERVAL_MS = 600L
 private const val LIVE_PREVIEW_HD_1080_INTERVAL_MS = 200L
-private const val CLIPBOARD_POLL_INTERVAL_MS = 1500L
+private const val CLIPBOARD_FOREGROUND_POLL_INTERVAL_MS = 1500L
+private const val CLIPBOARD_BACKGROUND_POLL_INTERVAL_MS = 2500L
+private const val CLIPBOARD_RETRY_DELAY_MS = 3000L
 private const val DEFAULT_NOTIFICATION_DISPLAY_LIMIT = 5
 private const val MIN_NOTIFICATION_DISPLAY_LIMIT = 5
 private const val MAX_NOTIFICATION_DISPLAY_LIMIT = 50
@@ -241,6 +244,9 @@ class MainActivity : AppCompatActivity() {
     private var isActivityResumed = false
     private var suppressClipboardCallback = false
     private var suppressClipboardSwitchCallback = false
+    private var suppressBackgroundClipboardSwitchCallback = false
+    private var isClipboardDispatchInFlight = false
+    private var lastClipboardReadErrorMessage: String? = null
     private var lastLocalClipboardSignature = ""
     private var unreadNotificationCount = 0
     private var currentSectionTabIndex = 0
@@ -404,6 +410,13 @@ class MainActivity : AppCompatActivity() {
 
     private val livePreviewRunnable = Runnable { pollLivePreview() }
     private val cameraPreviewRunnable = Runnable { pollCameraPreview() }
+    private val clipboardRetryRunnable = Runnable {
+        if (!shouldClipboardMonitoringBeActive()) {
+            return@Runnable
+        }
+
+        processLocalClipboardChange()
+    }
     private val localizationSweepRunnable = object : Runnable {
         override fun run() {
             if (!BuildConfig.FORCE_ENGLISH || !isActivityResumed) {
@@ -416,13 +429,13 @@ class MainActivity : AppCompatActivity() {
     }
     private val clipboardPollRunnable = object : Runnable {
         override fun run() {
-            if (!isActivityResumed) {
+            if (!shouldClipboardMonitoringBeActive()) {
                 return
             }
 
             processLocalClipboardChange()
-            if (enabledClipboardSyncPcIds().isNotEmpty()) {
-                mainHandler.postDelayed(this, CLIPBOARD_POLL_INTERVAL_MS)
+            if (shouldClipboardMonitoringBeActive()) {
+                mainHandler.postDelayed(this, currentClipboardPollIntervalMs())
             }
         }
     }
@@ -495,6 +508,7 @@ class MainActivity : AppCompatActivity() {
         binding.clipboardSyncStatusText.text = "Select a PC first to use clipboard sync."
         binding.cameraStatusText.text = "Select a PC first for the camera."
         binding.livePreviewStatusText.text = "Select a PC first for live screen preview."
+        setBackgroundClipboardMonitoringSwitchChecked(store.backgroundClipboardMonitoringEnabled)
 
         updateSelectedRemoteFile(null)
         updateSelectedProcess(null)
@@ -565,7 +579,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         isActivityResumed = false
-        pauseClipboardForegroundMonitoring()
+        refreshClipboardMonitoringState(processImmediately = false)
         stopCameraPreview(updateStoredPreference = false)
         mainHandler.removeCallbacks(localizationSweepRunnable)
         super.onPause()
@@ -855,6 +869,12 @@ class MainActivity : AppCompatActivity() {
         suppressClipboardSwitchCallback = false
     }
 
+    private fun setBackgroundClipboardMonitoringSwitchChecked(isChecked: Boolean) {
+        suppressBackgroundClipboardSwitchCallback = true
+        binding.backgroundClipboardMonitoringSwitch.isChecked = isChecked
+        suppressBackgroundClipboardSwitchCallback = false
+    }
+
     private fun applySelectedPcScopedState(restoreLivePreview: Boolean) {
         val scopedPcId = selectedPcIdOrNull()
         val selectedPcName = store.pairedPcName.ifBlank { "Selected PC" }
@@ -883,9 +903,10 @@ class MainActivity : AppCompatActivity() {
         setCameraMirrorSwitchChecked(scopedPcId != null && store.getCameraMirrorEnabled(scopedPcId))
 
         setClipboardSyncSwitchChecked(clipboardEnabled)
+        setBackgroundClipboardMonitoringSwitchChecked(store.backgroundClipboardMonitoringEnabled)
         binding.clipboardSyncStatusText.text = when {
             scopedPcId == null -> "Select a PC first to use clipboard sync."
-            clipboardEnabled -> "Clipboard sync is ready for $selectedPcName. Text copied on the phone is sent while the app is open."
+            clipboardEnabled -> "Clipboard sync is ready for $selectedPcName.${buildBackgroundClipboardModeSuffix()}"
             else -> "Clipboard sync is off for $selectedPcName."
         }
         binding.livePreviewStatusText.text = when {
@@ -1035,7 +1056,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val limitationNote =
-            "Note: because of the Android 10+ restriction, phone-to-PC clipboard sync works only while the app is open."
+            "Note: because of Android 10+ and manufacturer restrictions, phone-to-PC clipboard sync cannot be guaranteed in the background. The app keeps trying, but the device may still block it."
         val manufacturerNote = if (isMiuiFamilyDevice()) {
             "On this device you may also need to enable Auto Start and set battery restrictions to Unlimited/None."
         } else {
@@ -1077,7 +1098,7 @@ class MainActivity : AppCompatActivity() {
                     buildString {
                         append("Exempting the app from battery optimization improves notifications, the live connection, and clipboard updates from the PC.")
                         append("\n\n")
-                        append("Phone-to-PC clipboard sync does not work while other apps are in the foreground because of Android restrictions; the app must be open for that direction.")
+                        append("Phone-to-PC clipboard sync is not guaranteed while other apps are in the foreground. This build can keep trying in the background, but Android or the device vendor may still block clipboard access.")
                         if (isMiuiFamilyDevice()) {
                             append("\n\n")
                             append("On Xiaomi/Redmi/POCO devices you may also need to enable Auto Start and set battery restrictions to Unlimited/None.")
@@ -1119,6 +1140,45 @@ class MainActivity : AppCompatActivity() {
         if (isMiuiFamilyDevice()) {
             showToast("On Xiaomi/Redmi/POCO devices you may also need to enable Auto Start and set battery restrictions to Unlimited/None.")
         }
+    }
+
+    private fun openAdditionalBackgroundSettings() {
+        val targetIntent = buildAdditionalBackgroundSettingIntents().firstOrNull { intent ->
+            runCatching { intent.resolveActivity(packageManager) != null }.getOrDefault(false)
+        }
+
+        if (targetIntent == null) {
+            showToast("Extra background settings could not be opened on this device.")
+            return
+        }
+
+        startActivity(targetIntent)
+        showToast("Extra background settings opened.")
+    }
+
+    private fun buildAdditionalBackgroundSettingIntents(): List<Intent> {
+        val packageUri = Uri.parse("package:$packageName")
+
+        fun componentIntent(targetPackage: String, targetClass: String): Intent =
+            Intent().apply {
+                component = ComponentName(targetPackage, targetClass)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+        return listOf(
+            componentIntent("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"),
+            componentIntent("com.miui.securitycenter", "com.miui.appmanager.ApplicationsDetailsActivity").apply {
+                putExtra("package_name", packageName)
+            },
+            componentIntent("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"),
+            componentIntent("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity"),
+            componentIntent("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"),
+            componentIntent("com.oplus.safecenter", "com.oplus.safecenter.startupapp.StartupAppListActivity"),
+            componentIntent("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager"),
+            componentIntent("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"),
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri),
+            Intent(Settings.ACTION_APPLICATION_SETTINGS),
+        )
     }
 
     private fun isBackgroundPermissionGranted(): Boolean {
@@ -1341,6 +1401,7 @@ class MainActivity : AppCompatActivity() {
         binding.cameraSnapshotButton.setOnClickListener { requestCameraSnapshot() }
         binding.startCameraPreviewButton.setOnClickListener { startCameraPreview() }
         binding.stopCameraPreviewButton.setOnClickListener { stopCameraPreview() }
+        binding.cameraPreviewImage.setOnClickListener { openCameraPreviewDialog() }
     }
 
     private fun setupButtons() {
@@ -1372,6 +1433,9 @@ class MainActivity : AppCompatActivity() {
         binding.checkBackgroundPermissionButton.setOnClickListener {
             refreshBackgroundPermissionState(promptIfDue = false, forceTimestampUpdate = true)
         }
+        binding.backgroundAdvancedSettingsButton.setOnClickListener {
+            openAdditionalBackgroundSettings()
+        }
 
         binding.pairButton.setOnClickListener {
             persistLocalConfig()
@@ -1395,7 +1459,7 @@ class MainActivity : AppCompatActivity() {
                     updateSelectedPcDisplay(result.pcName, result.status)
                     binding.unpairButton.isEnabled = true
                     binding.statusText.text = "Paired: ${result.pcName} (${result.status})"
-                    appendLog("Telefon eslesti: ${result.pcName}")
+                    appendLog("Phone paired: ${result.pcName}")
                     refreshPcState()
                     refreshUsageSummary()
                     updateSettingsTabBadge()
@@ -1417,7 +1481,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.lockButton.setOnClickListener { sendAwaitedCommand("Ekran kilitle", "lock") }
         binding.shutdownButton.setOnClickListener { sendAwaitedCommand("Force shutdown the computer", "shutdown") }
-        binding.restartButton.setOnClickListener { sendAwaitedCommand("Zorla yeniden baslat", "restart") }
+        binding.restartButton.setOnClickListener { sendAwaitedCommand("Force restart the computer", "restart") }
         binding.logoffButton.setOnClickListener { sendAwaitedCommand("Log off", "logoff") }
         binding.unpairButton.setOnClickListener { unpairCurrentPc() }
 
@@ -1428,16 +1492,16 @@ class MainActivity : AppCompatActivity() {
             sendAwaitedCommand("Stop", "media", JSONObject().put("action", "stop"))
         }
         binding.nextTrackButton.setOnClickListener {
-            sendAwaitedCommand("Sonraki", "media", JSONObject().put("action", "next"))
+            sendAwaitedCommand("Next", "media", JSONObject().put("action", "next"))
         }
         binding.previousTrackButton.setOnClickListener {
-            sendAwaitedCommand("Onceki", "media", JSONObject().put("action", "previous"))
+            sendAwaitedCommand("Previous", "media", JSONObject().put("action", "previous"))
         }
         binding.volumeUpButton.setOnClickListener {
-            sendAwaitedCommand("Ses artir", "volume", JSONObject().put("action", "up").put("steps", 2))
+            sendAwaitedCommand("Volume up", "volume", JSONObject().put("action", "up").put("steps", 2))
         }
         binding.volumeDownButton.setOnClickListener {
-            sendAwaitedCommand("Ses azalt", "volume", JSONObject().put("action", "down").put("steps", 2))
+            sendAwaitedCommand("Volume down", "volume", JSONObject().put("action", "down").put("steps", 2))
         }
         binding.muteButton.setOnClickListener {
             sendAwaitedCommand("Mute", "volume", JSONObject().put("action", "mute"))
@@ -1462,7 +1526,7 @@ class MainActivity : AppCompatActivity() {
         binding.launchCustomAppButton.setOnClickListener {
             val path = binding.customAppPathInput.text.toString().trim()
             if (path.isBlank()) {
-                showToast("Once custom uygulama yolu sec.")
+                showToast("Select a custom app path first.")
                 return@setOnClickListener
             }
 
@@ -1520,6 +1584,17 @@ class MainActivity : AppCompatActivity() {
                 startClipboardSync()
             } else {
                 stopClipboardSync()
+            }
+        }
+        binding.backgroundClipboardMonitoringSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressBackgroundClipboardSwitchCallback) {
+                return@setOnCheckedChangeListener
+            }
+
+            store.backgroundClipboardMonitoringEnabled = isChecked
+            if (enabledClipboardSyncPcIds().isNotEmpty()) {
+                refreshClipboardMonitoringState(processImmediately = false)
+                binding.clipboardSyncStatusText.text = buildClipboardSyncActiveStatus(enabledClipboardSyncPcIds())
             }
         }
         binding.sendKeyboardButton.setOnClickListener {
@@ -1673,13 +1748,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("Ilk kullanim")
-            .setMessage("Bu uygulamayi ilk defa mi kullaniyorsunuz?")
+            .setTitle("First use")
+            .setMessage("Are you using this app for the first time?")
             .setCancelable(false)
-            .setNegativeButton("Hayir") { _, _ ->
+            .setNegativeButton("No") { _, _ ->
                 store.hasSeenFirstRunPrompt = true
             }
-            .setPositiveButton("Evet ilk defa kullaniyorum") { _, _ ->
+            .setPositiveButton("Yes, this is my first time") { _, _ ->
                 store.hasSeenFirstRunPrompt = true
                 openGettingStartedGuide()
             }
@@ -1760,6 +1835,7 @@ class MainActivity : AppCompatActivity() {
                     renderUsageSummaryPlaceholder()
                     renderPcSummary(emptyList())
                     appendLog("No PC is linked to this account.")
+                    localizeVisibleUi()
                 }
                 return@runInBackground
             }
@@ -1775,10 +1851,10 @@ class MainActivity : AppCompatActivity() {
                 applySelectedPcScopedState(restoreLivePreview = true)
                 binding.statusText.text = buildString {
                     append("${selectedPc.name} -> ${selectedPc.status}")
-                        append(" | latest event: ${selectedPc.lastEventType}")
+                    append(" | latest event: ${selectedPc.lastEventType}")
                     if (selectedPc.lastSeenAt > 0L) {
                         append('\n')
-                        append("Son gorulme: ")
+                        append("Last seen: ")
                         append(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(selectedPc.lastSeenAt))
                     }
                 }
@@ -1786,6 +1862,7 @@ class MainActivity : AppCompatActivity() {
                 loadNotificationSettings()
                 loadNotificationCenter()
                 appendLog("PC status refreshed.")
+                localizeVisibleUi()
             }
         }
     }
@@ -1802,6 +1879,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.selectPcButton.isEnabled = pcs.size > 1
         binding.unpairButton.isEnabled = store.pairedPcId.isNotBlank()
+        localizeVisibleUi()
     }
 
     private fun updateSelectedPcDisplay(name: String?, status: String?) {
@@ -1811,6 +1889,7 @@ class MainActivity : AppCompatActivity() {
             "Selected PC: $name"
         }
         renderSelectedPcStatusBadge(status)
+        localizeVisibleUi()
     }
 
     private fun renderSelectedPcStatusBadge(status: String?) {
@@ -2042,14 +2121,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun unpairCurrentPc() {
         if (store.ownerToken.isBlank() || store.pairedPcId.isBlank()) {
-            showToast("Kaldirilacak eslesme bulunamadi.")
+            showToast("No pairing was found to remove.")
             return
         }
 
         AlertDialog.Builder(this)
-            .setTitle("Eslesmeyi kaldir")
-                .setMessage("Do you want to remove the phone pairing for ${store.pairedPcName.ifBlank { "this PC" }}?")
-            .setPositiveButton("Kaldir") { _, _ ->
+            .setTitle("Remove pairing")
+            .setMessage("Do you want to remove the phone pairing for ${store.pairedPcName.ifBlank { "this PC" }}?")
+            .setPositiveButton("Remove") { _, _ ->
                 persistLocalConfig()
                 runInBackground {
                     val pc = api.unpairPc(store.workerUrl, store.ownerToken, store.pairedPcId)
@@ -2061,7 +2140,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-            .setNegativeButton("Iptal", null)
+            .setNegativeButton("Cancel", null)
             .create()
             .also { showLocalizedDialog(it) }
     }
@@ -2323,7 +2402,7 @@ class MainActivity : AppCompatActivity() {
             attachShortcutTouchFeedback(this)
             setOnClickListener {
                 if (isShortcutReorderMode) {
-                    showToast("Siralama modunda karti basili tutup tasiyabilirsin.")
+                    showToast("In reorder mode, press and hold a tile to move it.")
                 } else {
                     runShortcutItem(item)
                 }
@@ -2488,12 +2567,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateShortcutReorderUi() {
         binding.shortcutReorderButton.background = createShortcutReorderButtonBackground(isShortcutReorderMode)
-        binding.shortcutReorderButton.text = if (isShortcutReorderMode) "Siralama acik" else "Sirala"
+        binding.shortcutReorderButton.text = if (isShortcutReorderMode) "Reordering on" else "Reorder"
         binding.shortcutsModeHintText.text = if (isShortcutReorderMode) {
-            "Siralama modu acik. Bir karti basili tutup surukleyerek yerini degistir. Sona tasimak icin arti kartina birakabilirsin."
+            "Reorder mode is on. Press and hold a tile to move it. Drop it on the plus tile to move it to the end."
         } else {
-            "Kartlara dokununca secili PC uzerinde calisir. Linkler varsayilan tarayicida, protokol linkleri destekleyen uygulamada acilir."
+            "Tap a tile to run it on the selected PC. Links open in the default browser or in the app that handles that protocol."
         }
+        localizeVisibleUi()
     }
 
     private fun startShortcutDrag(view: View, item: ShortcutItem): Boolean {
@@ -2504,7 +2584,7 @@ class MainActivity : AppCompatActivity() {
         val started = view.startDragAndDrop(dragData, View.DragShadowBuilder(view), item.id, 0)
         if (!started) {
             clearShortcutDragState(refreshGrid = true)
-            showToast("Kisayol surukleme baslatilamadi.")
+            showToast("Shortcut dragging could not be started.")
         }
         return started
     }
@@ -2573,7 +2653,7 @@ class MainActivity : AppCompatActivity() {
                 shortcutDropHandled = moved
                 clearShortcutDragState(refreshGrid = true)
                 if (moved) {
-                    showToast("Kisayol listenin sonuna tasindi.")
+                    showToast("The shortcut was moved to the end of the list.")
                 }
                 moved
             }
@@ -2601,7 +2681,7 @@ class MainActivity : AppCompatActivity() {
                     shortcutDropHandled = moved
                     clearShortcutDragState(refreshGrid = true)
                     if (moved) {
-                        showToast("Kisayol listenin sonuna tasindi.")
+                        showToast("The shortcut was moved to the end of the list.")
                     }
                     moved
                 }
@@ -2763,19 +2843,19 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Close", null)
             .create()
 
-        rowOne.addView(createShortcutActionButton("Calistir") {
+        rowOne.addView(createShortcutActionButton("Run") {
             dialog.dismiss()
             runShortcutItem(item)
         })
-        rowOne.addView(createShortcutActionButton("Duzenle", withMarginStart = true) {
+        rowOne.addView(createShortcutActionButton("Edit", withMarginStart = true) {
             dialog.dismiss()
             showShortcutEditor(item)
         })
-        rowTwo.addView(createShortcutActionButton("Ikonu yenile") {
+        rowTwo.addView(createShortcutActionButton("Refresh icon") {
             dialog.dismiss()
             refreshShortcutIcon(item)
         })
-        rowTwo.addView(createShortcutActionButton("Sil", withMarginStart = true) {
+        rowTwo.addView(createShortcutActionButton("Delete", withMarginStart = true) {
             dialog.dismiss()
             confirmShortcutDeletion(item)
         })
@@ -3046,9 +3126,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle(if (existing == null) "Kisayol ekle" else "Kisayolu duzenle")
+            .setTitle(if (existing == null) "Add shortcut" else "Edit shortcut")
             .setView(scrollView)
-            .setNegativeButton("Iptal", null)
+            .setNegativeButton("Cancel", null)
             .setPositiveButton(if (existing == null) "Save" else "Update", null)
             .create()
 
@@ -3068,7 +3148,7 @@ class MainActivity : AppCompatActivity() {
                 val option = shortcutTypeOptions.getOrElse(typeSpinner.selectedItemPosition) { shortcutTypeOptions.first() }
                 val hotkeyKeys = if (option.id == "hotkey") currentHotkeyKeys() else emptyList()
                 if (option.id == "hotkey" && hotkeyKeys.none { it !in hotkeyModifierIdSet }) {
-                    showToast("Hotkey icin bir ana tus sec.")
+                    showToast("Select a primary key for the hotkey.")
                     return@setOnClickListener
                 }
                 if (option.id == "hotkey" && isBlockedHotkeyCombination(hotkeyKeys)) {
@@ -3078,7 +3158,7 @@ class MainActivity : AppCompatActivity() {
 
                 val target = if (option.id == "hotkey") "" else targetInput.text.toString().trim()
                 if (option.id != "hotkey" && target.isBlank()) {
-                    showToast("Kisayol hedefi bos olamaz.")
+                    showToast("Shortcut target cannot be empty.")
                     return@setOnClickListener
                 }
 
@@ -3161,8 +3241,8 @@ class MainActivity : AppCompatActivity() {
                 triggerView?.isEnabled = true
                 if (inspectedResult?.success == false) {
                     appendLog(
-                        "Kisayol kaydedildi ama ikon bilgisi alinamadi: ${
-                            friendlyErrorMessage(inspectedResult.error, "bilinmeyen hata")
+                        "The shortcut was saved but the icon information could not be retrieved: ${
+                            friendlyErrorMessage(inspectedResult.error, "unknown error")
                         }",
                     )
                 }
@@ -3180,27 +3260,27 @@ class MainActivity : AppCompatActivity() {
 
         persistShortcutItems()
         renderShortcutGrid()
-        appendLog("Kisayol hazir: ${shortcut.title}")
+        appendLog("Shortcut ready: ${shortcut.title}")
     }
 
     private fun confirmShortcutDeletion(item: ShortcutItem) {
         AlertDialog.Builder(this)
-            .setTitle("Kisayolu sil")
-            .setMessage("${item.title} kaldirilsin mi?")
-            .setPositiveButton("Sil") { _, _ ->
+            .setTitle("Delete shortcut")
+            .setMessage("Remove ${item.title}?")
+            .setPositiveButton("Delete") { _, _ ->
                 val removed = shortcutItems.removeAll { it.id == item.id }
                 activeShortcutId = activeShortcutId.takeUnless { it == item.id }
                 if (!removed) {
-                    showToast("Kisayol listede bulunamadi.")
+                    showToast("The shortcut was not found in the list.")
                     return@setPositiveButton
                 }
 
                 persistShortcutItems()
                 renderShortcutGrid()
-                appendLog("Kisayol silindi: ${item.title}")
-                showToast("${item.title} kaldirildi.")
+                appendLog("Shortcut deleted: ${item.title}")
+                showToast("${item.title} was removed.")
             }
-            .setNegativeButton("Iptal", null)
+            .setNegativeButton("Cancel", null)
             .create()
             .also { showLocalizedDialog(it) }
     }
@@ -3225,14 +3305,14 @@ class MainActivity : AppCompatActivity() {
                 parseCommandResult(command)
             }.getOrElse { error ->
                 runOnUiThread {
-                    showToast(friendlyErrorMessage(error.message, "Kisayol ikonu yenilenemedi."))
+                    showToast(friendlyErrorMessage(error.message, "The shortcut icon could not be refreshed."))
                 }
                 return@execute
             }
 
             runOnUiThread {
                 if (!inspected.success) {
-                    showToast(friendlyErrorMessage(inspected.error, "Kisayol ikonu yenilenemedi."))
+                    showToast(friendlyErrorMessage(inspected.error, "The shortcut icon could not be refreshed."))
                     return@runOnUiThread
                 }
 
@@ -3951,11 +4031,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("Secili ogeyi sil")
-            .setMessage("${entry.name} kalici olarak silinsin mi?")
-            .setPositiveButton("Sil") { _, _ ->
+            .setTitle("Delete selected item")
+            .setMessage("Permanently delete ${entry.name}?")
+            .setPositiveButton("Delete") { _, _ ->
                 sendAwaitedCommand(
-                    label = "Oge sil",
+                    label = "Delete item",
                     type = "file-manage",
                     payload = JSONObject()
                         .put("action", "delete")
@@ -3967,7 +4047,7 @@ class MainActivity : AppCompatActivity() {
                     listRemoteFiles(currentRemotePath.ifBlank { binding.filesPathInput.text.toString().trim() })
                 }
             }
-            .setNegativeButton("Iptal", null)
+            .setNegativeButton("Cancel", null)
             .create()
             .also { showLocalizedDialog(it) }
     }
@@ -3982,16 +4062,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("Secilenleri sil")
-            .setMessage("${entries.size} oge silinsin mi?")
-            .setPositiveButton("Sil") { _, _ ->
+            .setTitle("Delete selected items")
+            .setMessage("Delete ${entries.size} items?")
+            .setPositiveButton("Delete") { _, _ ->
                 persistLocalConfig()
                 runInBackground {
                     entries.forEachIndexed { index, entry ->
                         updateTransferProgress(
-                            "Toplu silme",
+                            "Bulk delete",
                             (((index + 1) / entries.size.toFloat()) * 100).roundToInt(),
-                            "${entry.name} siliniyor",
+                            "Deleting ${entry.name}",
                         )
                         val command = api.sendCommandAndAwaitResult(
                             workerUrl = store.workerUrl,
@@ -4005,18 +4085,18 @@ class MainActivity : AppCompatActivity() {
                         )
                         val result = parseCommandResult(command)
                         if (!result.success) {
-                            throw IllegalStateException(friendlyErrorMessage(result.error, "${entry.name} silinemedi."))
+                            throw IllegalStateException(friendlyErrorMessage(result.error, "${entry.name} could not be deleted."))
                         }
                     }
 
                     runOnUiThread {
-                        renderTransferComplete("Toplu silme tamamlandi.")
+                        renderTransferComplete("Bulk delete completed.")
                         clearRemoteSelection()
                         listRemoteFiles(currentRemotePath.ifBlank { binding.filesPathInput.text.toString().trim() })
                     }
                 }
             }
-            .setNegativeButton("Iptal", null)
+            .setNegativeButton("Cancel", null)
             .create()
             .also { showLocalizedDialog(it) }
     }
@@ -4516,22 +4596,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderFilePreviewText(title: String, text: String) {
-        binding.filePreviewTitleText.text = "Onizleme: $title"
+        binding.filePreviewTitleText.text = "Preview: $title"
         binding.filePreviewImage.visibility = View.GONE
         binding.filePreviewImage.setImageDrawable(null)
         binding.filePreviewText.text = text
+        localizeVisibleUi()
     }
 
     private fun renderFilePreviewPlaceholder() {
-        binding.filePreviewTitleText.text = "Dosya onizleme"
+        binding.filePreviewTitleText.text = "File preview"
         binding.filePreviewImage.visibility = View.GONE
         binding.filePreviewImage.setImageDrawable(null)
-        binding.filePreviewText.text = "Secili dosyanin hizli onizlemesi burada gosterilir."
+        binding.filePreviewText.text = "A quick preview of the selected file appears here."
+        localizeVisibleUi()
     }
 
     private fun renderTransferIdleState() {
         binding.transferProgressBar.progress = 0
-        binding.transferStatusText.text = "Aktarim bekleniyor."
+        binding.transferStatusText.text = "Waiting for transfer."
+        localizeVisibleUi()
     }
 
     private fun updateTransferProgress(title: String, progress: Int, detail: String) {
@@ -4943,7 +5026,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderUsageSummaryPlaceholder() {
         binding.usageSummaryText.text =
-            "Yaklasik limit bilgisi eslesme sonrasi gorunur. Not: request sayisi tahminidir; R2 icin sabit gunluk veri limiti yoktur."
+            "Estimated limit information appears after pairing. Note: the request count is approximate; there is no fixed daily data limit for R2."
+        localizeVisibleUi()
     }
 
     private fun refreshUsageSummary() {
@@ -4983,21 +5067,77 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateDragButton() {
         binding.dragModeButton.text = if (isDragModeEnabled) {
-            "Drag modu acik"
+            "Drag mode on"
         } else {
-            "Drag modu kapali"
+            "Drag mode off"
         }
+        localizeVisibleUi()
+    }
+
+    private fun openCameraPreviewDialog() {
+        openImageDialog(
+            bytes = lastCameraPreviewBytes,
+            emptyMessage = "Once kamera goruntusu al.",
+            decodeErrorMessage = "Kamera goruntusu acilamadi.",
+            dialogTitle = "PC Camera",
+            mirrorHorizontally = binding.cameraMirrorSwitch.isChecked,
+            onSave = ::saveCurrentCameraPreview,
+        )
     }
 
     private fun openScreenshotDialog() {
-        val bytes = lastScreenshotBytes
+        openImageDialog(
+            bytes = lastScreenshotBytes,
+            emptyMessage = "Once screenshot al.",
+            decodeErrorMessage = "Screenshot acilamadi.",
+            dialogTitle = "PC Screenshot",
+            onSave = ::saveCurrentScreenshot,
+        )
+    }
+
+    private fun saveCurrentScreenshot() {
+        saveImageBytes(
+            bytes = lastScreenshotBytes,
+            fileName = lastScreenshotFileName,
+            emptyMessage = "Once screenshot al.",
+        )
+    }
+
+    private fun saveCurrentCameraPreview() {
+        saveImageBytes(
+            bytes = lastCameraPreviewBytes,
+            fileName = lastCameraPreviewFileName,
+            emptyMessage = "Once kamera goruntusu al.",
+        )
+    }
+
+    private fun saveImageBytes(bytes: ByteArray?, fileName: String, emptyMessage: String) {
         if (bytes == null) {
-            showToast("Once screenshot al.")
+            showToast(emptyMessage)
+            return
+        }
+
+        pendingDownloadBytes = bytes
+        pendingDownloadObjectKey = null
+        pendingDownloadFileName = fileName
+        createDocumentLauncher.launch(fileName)
+    }
+
+    private fun openImageDialog(
+        bytes: ByteArray?,
+        emptyMessage: String,
+        decodeErrorMessage: String,
+        dialogTitle: String,
+        mirrorHorizontally: Boolean = false,
+        onSave: () -> Unit,
+    ) {
+        if (bytes == null) {
+            showToast(emptyMessage)
             return
         }
 
         val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: run {
-            showToast("Screenshot acilamadi.")
+            showToast(decodeErrorMessage)
             return
         }
 
@@ -5008,31 +5148,17 @@ class MainActivity : AppCompatActivity() {
             )
             setBackgroundColor(Color.parseColor("#140E26"))
             setImageBitmap(bitmap)
+            scaleX = if (mirrorHorizontally) -1f else 1f
             setPadding(12, 12, 12, 12)
         }
 
         AlertDialog.Builder(this)
-            .setTitle("PC Screenshot")
+            .setTitle(dialogTitle)
             .setView(imageView)
             .setPositiveButton("Close", null)
-            .setNeutralButton("Save") { _, _ ->
-                saveCurrentScreenshot()
-            }
+            .setNeutralButton("Save") { _, _ -> onSave() }
             .create()
             .also { showLocalizedDialog(it) }
-    }
-
-    private fun saveCurrentScreenshot() {
-        val bytes = lastScreenshotBytes
-        if (bytes == null) {
-            showToast("Once screenshot al.")
-            return
-        }
-
-        pendingDownloadBytes = bytes
-        pendingDownloadObjectKey = null
-        pendingDownloadFileName = lastScreenshotFileName
-        createDocumentLauncher.launch(lastScreenshotFileName)
     }
 
     private fun pollLivePreview() {
@@ -5122,24 +5248,72 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        clipboardManager.removePrimaryClipChangedListener(clipboardChangedListener)
-        clipboardManager.addPrimaryClipChangedListener(clipboardChangedListener)
-        mainHandler.removeCallbacks(clipboardPollRunnable)
-        processLocalClipboardChange()
-        if (isActivityResumed) {
-            mainHandler.postDelayed(clipboardPollRunnable, CLIPBOARD_POLL_INTERVAL_MS)
-        }
+        refreshClipboardMonitoringState(processImmediately = true)
         binding.clipboardSyncStatusText.text = buildClipboardSyncActiveStatus(enabledPcIds)
     }
 
     private fun stopClipboardSync() {
-        pauseClipboardForegroundMonitoring()
-        binding.clipboardSyncStatusText.text = "Clipboard senkronizasyonu kapali."
+        pauseClipboardMonitoring()
+        binding.clipboardSyncStatusText.text = "Clipboard sync is off."
     }
 
-    private fun pauseClipboardForegroundMonitoring() {
+    private fun refreshClipboardMonitoringState(processImmediately: Boolean) {
+        pauseClipboardMonitoring()
+        if (!shouldClipboardMonitoringBeActive()) {
+            return
+        }
+
+        clipboardManager.addPrimaryClipChangedListener(clipboardChangedListener)
+        if (processImmediately) {
+            processLocalClipboardChange()
+        }
+        mainHandler.postDelayed(clipboardPollRunnable, currentClipboardPollIntervalMs())
+    }
+
+    private fun pauseClipboardMonitoring() {
         clipboardManager.removePrimaryClipChangedListener(clipboardChangedListener)
         mainHandler.removeCallbacks(clipboardPollRunnable)
+        mainHandler.removeCallbacks(clipboardRetryRunnable)
+    }
+
+    private fun shouldClipboardMonitoringBeActive(): Boolean {
+        val enabledPcIds = enabledClipboardSyncPcIds()
+        return store.workerUrl.isNotBlank() &&
+            store.ownerToken.isNotBlank() &&
+            enabledPcIds.isNotEmpty() &&
+            (isActivityResumed || store.backgroundClipboardMonitoringEnabled)
+    }
+
+    private fun currentClipboardPollIntervalMs(): Long {
+        return if (isActivityResumed) {
+            CLIPBOARD_FOREGROUND_POLL_INTERVAL_MS
+        } else {
+            CLIPBOARD_BACKGROUND_POLL_INTERVAL_MS
+        }
+    }
+
+    private fun scheduleClipboardRetry(delayMs: Long = CLIPBOARD_RETRY_DELAY_MS) {
+        mainHandler.removeCallbacks(clipboardRetryRunnable)
+        if (shouldClipboardMonitoringBeActive()) {
+            mainHandler.postDelayed(clipboardRetryRunnable, delayMs)
+        }
+    }
+
+    private fun readLocalClipboardTextSafely(): String? {
+        return runCatching {
+            clipboardManager.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString().orEmpty()
+        }.onSuccess {
+            lastClipboardReadErrorMessage = null
+        }.getOrElse { error ->
+            val message = friendlyErrorMessage(error.message, "Local clipboard could not be read.")
+            if (message != lastClipboardReadErrorMessage) {
+                lastClipboardReadErrorMessage = message
+                appendLog(message)
+            }
+            binding.clipboardSyncStatusText.text =
+                "The local clipboard cannot be read right now. Android or the device may be blocking background clipboard access."
+            null
+        }
     }
 
     private fun enabledClipboardSyncPcIds(): Set<String> = store.getEnabledClipboardSyncPcIds()
@@ -5150,7 +5324,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val clipText = clipboardManager.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString().orEmpty()
+        val clipText = readLocalClipboardTextSafely() ?: return
         val clipSignature = clipboardSignature(clipText)
         val suppressedPcIds = enabledPcIds.filter { store.shouldSuppressClipboardEcho(it, clipText) }
         if (suppressedPcIds.isNotEmpty()) {
@@ -5158,7 +5332,7 @@ class MainActivity : AppCompatActivity() {
             store.lastLocalClipboardSignature = clipSignature
             suppressedPcIds.forEach { store.clearIncomingClipboardMarker(it) }
             binding.clipboardInput.setText(clipText)
-            binding.clipboardSyncStatusText.text = "PC clipboard'u telefona alindi."
+            binding.clipboardSyncStatusText.text = "PC clipboard received on the phone."
             return
         }
 
@@ -5166,31 +5340,77 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        lastLocalClipboardSignature = clipSignature
-        store.lastLocalClipboardSignature = clipSignature
-        sendQueuedCommandToPcs(
-            pcIds = enabledPcIds,
-            label = "Clipboard senkronize edildi",
-            type = "clipboard-set",
-            payload = JSONObject().put("text", clipText),
-            logDispatch = false,
-        )
-        binding.clipboardSyncStatusText.text = buildClipboardDispatchStatus(enabledPcIds)
+        dispatchClipboardToPcs(enabledPcIds, clipText, clipSignature)
     }
 
     private fun buildClipboardSyncActiveStatus(enabledPcIds: Set<String>): String {
         return when (enabledPcIds.size) {
-            0 -> "Clipboard senkronizasyonu kapali."
-            1 -> "Clipboard senkronizasyonu acik. Uygulama acikken telefondan kopyaladigin yazi ${resolvePcDisplayName(enabledPcIds.first())} cihazina gonderilir. Yeni PC kopyalamalari otomatik gelir."
-            else -> "Clipboard senkronizasyonu acik. Uygulama acikken telefondan kopyaladigin yazi ${enabledPcIds.size} etkin PC'ye gonderilir. Yeni PC kopyalamalari otomatik gelir."
+            0 -> "Clipboard sync is off."
+            1 -> "Clipboard sync is on. Text copied on the phone is sent to ${resolvePcDisplayName(enabledPcIds.first())}. New PC clipboard updates arrive automatically.${buildBackgroundClipboardModeSuffix()}"
+            else -> "Clipboard sync is on. Text copied on the phone is sent to ${enabledPcIds.size} active PCs. New PC clipboard updates arrive automatically.${buildBackgroundClipboardModeSuffix()}"
         }
     }
 
     private fun buildClipboardDispatchStatus(enabledPcIds: Set<String>): String {
         return when (enabledPcIds.size) {
-            0 -> "Clipboard senkronizasyonu kapali."
-            1 -> "Yerel clipboard ${resolvePcDisplayName(enabledPcIds.first())} cihazina gonderildi."
-            else -> "Yerel clipboard ${enabledPcIds.size} etkin PC'ye gonderildi."
+            0 -> "Clipboard sync is off."
+            1 -> "Local clipboard sent to ${resolvePcDisplayName(enabledPcIds.first())}."
+            else -> "Local clipboard sent to ${enabledPcIds.size} active PCs."
+        }
+    }
+
+    private fun buildBackgroundClipboardModeSuffix(): String {
+        return if (store.backgroundClipboardMonitoringEnabled) {
+            " Background attempt mode is on, but Android or the device vendor may still block clipboard tracking."
+        } else {
+            " Phone-to-PC tracking stops while the app is in the background."
+        }
+    }
+
+    private fun dispatchClipboardToPcs(
+        enabledPcIds: Set<String>,
+        clipText: String,
+        clipSignature: String,
+    ) {
+        if (isClipboardDispatchInFlight) {
+            scheduleClipboardRetry(delayMs = 500L)
+            return
+        }
+
+        isClipboardDispatchInFlight = true
+        persistLocalConfig()
+        runInBackground {
+            val failures = mutableListOf<String>()
+            enabledPcIds.forEach { pcId ->
+                runCatching {
+                    api.sendCommand(
+                        workerUrl = store.workerUrl,
+                        ownerToken = store.ownerToken,
+                        pcId = pcId,
+                        type = "clipboard-set",
+                        payload = JSONObject().put("text", clipText),
+                    )
+                }.onFailure { error ->
+                    failures += "${resolvePcDisplayName(pcId)}: ${friendlyErrorMessage(error.message)}"
+                }
+            }
+
+            runOnUiThread {
+                isClipboardDispatchInFlight = false
+                if (failures.isEmpty()) {
+                    lastLocalClipboardSignature = clipSignature
+                    store.lastLocalClipboardSignature = clipSignature
+                    binding.clipboardSyncStatusText.text = buildClipboardDispatchStatus(enabledPcIds)
+                } else {
+                    binding.clipboardSyncStatusText.text = "Clipboard delivery failed and will be retried."
+                    appendLog("Clipboard delivery failed: ${failures.joinToString(" | ")}")
+                    scheduleClipboardRetry()
+                }
+
+                if (shouldClipboardMonitoringBeActive()) {
+                    mainHandler.postDelayed(clipboardRetryRunnable, 350L)
+                }
+            }
         }
     }
 

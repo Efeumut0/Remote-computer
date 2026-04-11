@@ -27,7 +27,7 @@
                 android:layout_width="@dimen/header_logo_size"
                 android:layout_height="@dimen/header_logo_size"
                 android:background="@drawable/bg_header_logo_frame"
-                android:contentDescription="Uzaktan Bildirim logosu"
+                android:contentDescription="Remote Notification logo"
                 android:padding="2dp"
                 android:scaleType="centerCrop"
                 android:src="@drawable/ic_app_brand_logo_v2"
@@ -206,7 +206,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Telefon adi" />
+            android:hint="Phone name" />
 
         <Button
             android:id="@+id/saveConfigButton"
@@ -263,6 +263,14 @@
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:text="Check status" />
+
+            <Button
+                android:id="@+id/backgroundAdvancedSettingsButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="Open extra settings" />
         </LinearLayout>
 
         <TextView
@@ -497,7 +505,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Zorla kapat" />
+                android:text="Force shutdown" />
         </LinearLayout>
 
         <LinearLayout
@@ -511,7 +519,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Zorla yeniden baslat" />
+                android:text="Force restart" />
 
             <Button
                 android:id="@+id/logoffButton"
@@ -802,6 +810,12 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Enable clipboard sync" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/backgroundClipboardMonitoringSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Try background clipboard monitoring" />
 
         <TextView
             android:id="@+id/clipboardSyncStatusText"
