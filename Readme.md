@@ -1,6 +1,6 @@
 # Remote Notification Initial Setup Guide
 
-This package is prepared for users who want to create their own Cloudflare Worker backend and build their own APK with their own Firebase project.
+Use this guide to deploy the Cloudflare Worker, build the Android APK with your Firebase project, and pair the app with the Windows agent.
 
 ## 1. Prepare the main folder
 
@@ -23,8 +23,6 @@ These 4 files must stay together inside the `exe` folder:
 - `PcRemoteAgent.dll`
 - `PcRemoteAgent.deps.json`
 - `PcRemoteAgent.runtimeconfig.json`
-
-Do not separate these files. `PcRemoteAgent.exe` should not be moved alone.
 
 ## 3. Prepare your Cloudflare account
 
@@ -55,9 +53,9 @@ Do not separate these files. `PcRemoteAgent.exe` should not be moved alone.
    - creates `wrangler.jsonc` from a template
    - automatically applies the D1 migration files to the remote database
    - helps you set Firebase service account secrets
-   - takes you all the way to `npx wrangler deploy`
+   - deploys the Worker with `npx wrangler deploy`
 
-You do not copy these names from somewhere else. You choose them yourself:
+Choose names for the Worker, D1 database and optional R2 bucket:
 
 - `Worker name`: the project part of the final `workers.dev` address. Example: `my-remote-control`
 - `D1 database name`: the name shown in the Cloudflare D1 list. Example: `remote-control-db`
@@ -96,15 +94,7 @@ Note: D1 is required for this setup. R2 is optional. If R2 is not enabled on the
 
 ## 8. Worker URL
 
-1. `backend-setup-helper.bat` runs `npx wrangler deploy` near the end.
-2. After deploy finishes, a `workers.dev` address is created.
-3. That address is your `Worker URL`.
-4. Use the same address in both the Windows agent and the Android app.
-5. Copy only the exact full `https://...workers.dev` address printed by deploy.
-6. Do not enter only the Worker name, only the subdomain, or a guessed address you manually joined together.
-7. You can view it later again in `Workers & Pages`.
-8. The current backend helper also saves this address in `worker-url.txt` in the main folder.
-8. If you finished setup without R2, the system still works with the same Worker URL.
+After deployment, copy the full `https://...workers.dev` address printed by Wrangler. Use it in both the Windows agent and the Android app. You can also find it in `worker-url.txt` in the main folder or under **Workers & Pages** in Cloudflare. The same URL works with or without R2.
 
 ## 9. If D1 tables are missing
 
@@ -162,8 +152,7 @@ Note: D1 is required for this setup. R2 is optional. If R2 is not enabled on the
 - The Android SDK usually comes with Android Studio.
 - After D1 is created, you can check it under `Storage & Databases -> D1`. After R2 is created, check `R2 Object Storage`. After Worker deploy, check `Workers & Pages`.
 - If R2 is disabled, the main setup can still finish. You can add R2 later with `add-r2-later-helper.bat`.
-- The Worker URL only exists after deploy.
-- In the Worker URL field, enter only the exact full `https://...workers.dev` address from deploy output.
+- If the Worker URL is missing, finish deployment and copy the address from the output.
 - If the EXE does not start, one of the required `.dll` or `.json` files is probably missing.
 - If pairing fails, the Worker URL may be wrong or the Windows agent may not be connected.
 - If the agent shows `error code: 1101`, run `repair-d1-tables-helper.bat`. That helper repairs the Worker config, reapplies the migrations, and redeploys the Worker.
